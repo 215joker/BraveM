@@ -1,0 +1,110 @@
+<resources>
+    <string name="app_name">BraveM</string>
+    <string name="app_tagline">Past Papers. Made Easy.</string>
+
+    <!-- Auth -->
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="email">Email</string>
+    <string name="password">Confirm Password</string>
+    <string name="password_hint">Password</string>
+    <string name="full_name">Full Name</string>
+    <string name="dont_have_account">Don\'t have an account? Register</string>
+    <string name="already_have_account">Already have an account? Login</string>
+    <string name="select_degree_title">Select Your Degree Programme</string>
+    <string name="select_degree_subtitle">We\'ll personalize your dashboard with resources for your course</string>
+    <string name="select_intake_title">Which intake are you?</string>
+    <string name="select_intake_subtitle">Select your current semester to get relevant paper recommendations</string>
+    <string name="continue_btn">Continue</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard">Dashboard</string>
+    <string name="welcome_prefix">Welcome,</string>
+    <string name="welcome_back">Welcome back,</string>
+    <string name="your_degree">Your Degree Programme</string>
+    <string name="recommended_resources">Recommended For You</string>
+    <string name="browse_all_degrees">Browse All Degrees</string>
+    <string name="recent_uploads">Recently Added</string>
+    <string name="upload_paper">Upload Paper</string>
+    <string name="search_papers">Search past papers…</string>
+
+    <!-- Papers -->
+    <string name="courses">Courses</string>
+    <string name="past_papers">Past Papers</string>
+    <string name="download">Download</string>
+    <string name="view">View</string>
+    <string name="downloading">Downloading…</string>
+    <string name="download_complete">Download complete</string>
+    <string name="download_failed">Download failed</string>
+    <string name="no_papers_found">No past papers found yet.</string>
+    <string name="no_courses_found">No courses found for this degree yet.</string>
+
+    <!-- Upload -->
+    <string name="upload_title">Upload a Past Paper</string>
+    <string name="select_file">Select PDF or Word File</string>
+    <string name="paper_title">Paper Title</string>
+    <string name="select_degree">Select Degree</string>
+    <string name="select_course">Select Course</string>
+    <string name="select_year">Year</string>
+    <string name="select_semester">Semester</string>
+    <string name="submit">Submit</string>
+    <string name="uploading">Uploading…</string>
+    <string name="upload_success">Paper uploaded successfully</string>
+    <string name="upload_failed">Upload failed</string>
+
+    <!-- Admin -->
+    <string name="admin_dashboard">Admin Dashboard</string>
+    <string name="manage_degrees">Manage Degrees</string>
+    <string name="manage_courses">Manage Courses</string>
+    <string name="manage_papers">Manage Papers</string>
+    <string name="add_degree">Add Degree</string>
+    <string name="add_missing_degree_title">Add Missing Degree</string>
+    <string name="school_or_dept">School or Department</string>
+    <string name="intake_hint">Intake (e.g., 1.1)</string>
+    <string name="save_and_select">Save &amp; Select</string>
+    <string name="fill_all_fields">Please fill all fields</string>
+    <string name="failed_to_add_degree">Failed to add degree</string>
+    <string name="add_course">Add Course</string>
+    <string name="degree_name">Degree Name</string>
+    <string name="course_name">Course Name</string>
+    <string name="course_code">Course Code</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+
+    <!-- Profile -->
+    <string name="profile">Profile</string>
+    <string name="logout">Logout</string>
+    <string name="my_uploads">My Uploads</string>
+    <string name="app_settings">App Settings</string>
+    <string name="app_theme">App Theme</string>
+    <string name="about_app">About BraveM</string>
+    <string name="contact_support">Contact Support</string>
+    <string name="edit_name">Edit Name</string>
+    <string name="intake_label">Intake: %1$s</string>
+
+    <!-- Settings Dialogs -->
+    <string name="choose_theme">Choose App Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System Default</string>
+    <string name="about_title">About BraveM</string>
+    <string name="about_desc">BraveM is your ultimate companion for academic success. Access a vast library of past papers and resources tailored for your university and degree programme.\n\nVersion 1.0.0\nDeveloped by Bravely Mutiziwa</string>
+    <string name="contact_title">Contact Support</string>
+    <string name="contact_email">Email Support</string>
+    <string name="contact_call">Call Support</string>
+    <string name="contact_whatsapp">WhatsApp Support</string>
+
+    <!-- Generic -->
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_required_field">This field is required</string>
+    <string name="error_invalid_email">Enter a valid email address</string>
+    <string name="error_password_short">Password must be at least 6 characters</string>
+    <string name="error_passwords_dont_match">Passwords do not match</string>
+    <string name="error_user_exists">This email is already registered</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="confirm_delete_title">Delete this item?</string>
+    <string name="confirm_delete_message">This action cannot be undone.</string>
+</resources>

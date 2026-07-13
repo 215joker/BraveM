@@ -1,0 +1,45 @@
+{
+  "_comment": "Example seed data. Not auto-imported by the app -- use this as a reference for the documents you create via the Admin > Manage Degrees / Manage Courses screens, or import manually via the Firebase Console / a Firestore import script.",
+  "degrees": [
+    {
+      "name": "BSc Computer Science",
+      "description": "School of Engineering & Computing"
+    },
+    {
+      "name": "BEng Civil Engineering",
+      "description": "School of Engineering & Computing"
+    },
+    {
+      "name": "BCom Accounting",
+      "description": "School of Business"
+    },
+    {
+      "name": "BA Law",
+      "description": "School of Law"
+    }
+  ],
+  "courses_example_for_BSc_Computer_Science": [
+    { "name": "Data Structures and Algorithms", "code": "CS301" },
+    { "name": "Database Systems", "code": "CS302" },
+    { "name": "Operating Systems", "code": "CS303" },
+    { "name": "Software Engineering", "code": "CS304" }
+  ],
+  "paper_document_shape_reference": {
+    "title": "Data Structures & Algorithms - Final Exam",
+    "degreeId": "<firestore-degree-doc-id>",
+    "degreeName": "BSc Computer Science",
+    "courseId": "<firestore-course-doc-id>",
+    "courseName": "Data Structures and Algorithms",
+    "courseCode": "CS301",
+    "year": 2024,
+    "semester": "Semester 1",
+    "fileType": "pdf",
+    "fileUrl": "<firebase-storage-download-url>",
+    "fileName": "cs301_final_2024.pdf",
+    "fileSizeBytes": 245678,
+    "uploadedByUid": "<firebase-auth-uid>",
+    "uploadedByName": "Thandiwe M.",
+    "createdAt": 1719000000000,
+    "approved": true
+  }
+}

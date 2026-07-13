@@ -1,0 +1,270 @@
+package com.bravem.app.ui.auth;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bravem.app.R;
+import com.bravem.app.adapter.DegreeAdapter;
+import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.DataCallback;
+import com.bravem.app.data.DegreeRepository;
+import com.bravem.app.model.Degree;
+import com.bravem.app.model.User;
+import com.bravem.app.ui.dashboard.DashboardActivity;
+import com.bravem.app.utils.SessionManager;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Shown once, right after registration. Sets the student's degree and intake.
+ */
+public class SelectDegreeActivity extends AppCompatActivity {
+
+    public static final String EXTRA_BROWSE_MODE = "extra_browse_mode";
+
+    private RecyclerView recyclerView;
+    private DegreeAdapter adapter;
+    private MaterialButton continueButton;
+    private View btnAddMissing;
+    private CircularProgressIndicator loadingIndicator;
+    private View emptyState;
+
+    private DegreeRepository degreeRepository;
+    private AuthRepository authRepository;
+    private SessionManager sessionManager;
+
+    private Degree selectedDegree;
+    private String regName, regEmail, regPassword;
+    private boolean isBrowseMode = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_select_degree);
+
+        isBrowseMode = getIntent().getBooleanExtra(EXTRA_BROWSE_MODE, false);
+        regName = getIntent().getStringExtra(RegisterActivity.EXTRA_NAME);
+        regEmail = getIntent().getStringExtra(RegisterActivity.EXTRA_EMAIL);
+        regPassword = getIntent().getStringExtra(RegisterActivity.EXTRA_PASSWORD);
+
+        degreeRepository = new DegreeRepository(this);
+        authRepository = new AuthRepository(this);
+        sessionManager = new SessionManager(this);
+
+        recyclerView = findViewById(R.id.recycler_degrees);
+        continueButton = findViewById(R.id.btn_continue);
+        btnAddMissing = findViewById(R.id.btn_add_missing);
+        loadingIndicator = findViewById(R.id.progress_loading);
+        emptyState = findViewById(R.id.empty_state);
+
+        btnAddMissing.setOnClickListener(v -> showAddDegreeDialog());
+
+        adapter = new DegreeAdapter(degree -> {
+            selectedDegree = degree;
+            adapter.setSelectedDegreeId(degree.getId());
+            continueButton.setEnabled(true);
+            showIntakeBottomSheet();
+        });
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+
+        continueButton.setEnabled(false);
+        continueButton.setOnClickListener(v -> showIntakeBottomSheet());
+
+        loadDegrees();
+    }
+
+    private void loadDegrees() {
+        loadingIndicator.setVisibility(View.VISIBLE);
+        String university = sessionManager.getUniversity();
+        degreeRepository.fetchDegreesByUniversity(university, new DataCallback<List<Degree>>() {
+            @Override
+            public void onSuccess(List<Degree> degrees) {
+                loadingIndicator.setVisibility(View.GONE);
+                adapter.submitList(degrees);
+                emptyState.setVisibility(degrees.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                loadingIndicator.setVisibility(View.GONE);
+                Toast.makeText(SelectDegreeActivity.this, R.string.error_generic, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void showAddDegreeDialog() {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_degree, null);
+        TextInputEditText editSchool = dialogView.findViewById(R.id.edit_school);
+        TextInputEditText editDegreeName = dialogView.findViewById(R.id.edit_degree_name);
+        TextInputEditText editIntake = dialogView.findViewById(R.id.edit_intake);
+        View btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        View btnSave = dialogView.findViewById(R.id.btn_save);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String school = editSchool.getText() != null ? editSchool.getText().toString().trim() : "";
+            String name = editDegreeName.getText() != null ? editDegreeName.getText().toString().trim() : "";
+            String intake = editIntake.getText() != null ? editIntake.getText().toString().trim() : "";
+
+            if (school.isEmpty() || name.isEmpty() || intake.isEmpty()) {
+                Toast.makeText(this, R.string.fill_all_fields, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            dialog.dismiss();
+            loadingIndicator.setVisibility(View.VISIBLE);
+
+            String university = sessionManager.getUniversity();
+            degreeRepository.addDegree(name, school, university, new DataCallback<>() {
+                @Override
+                public void onSuccess(Degree degree) {
+                    selectedDegree = degree;
+                    // Reload the list so the new degree (and school header if new) appears
+                    loadDegrees();
+                    // Proceed to confirm selection with the provided intake
+                    confirmSelection(intake);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    loadingIndicator.setVisibility(View.GONE);
+                    Toast.makeText(SelectDegreeActivity.this, R.string.failed_to_add_degree, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void showIntakeBottomSheet() {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_select_intake, null);
+        RecyclerView intakeRecycler = dialogView.findViewById(R.id.recycler_intakes);
+        
+        List<String> intakes = new ArrayList<>();
+        for (int year = 1; year <= 7; year++) {
+            intakes.add(year + ".1");
+            intakes.add(year + ".2");
+        }
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.Theme_BraveM_BottomSheetDialog);
+        dialog.setContentView(dialogView);
+
+        intakeRecycler.setLayoutManager(new GridLayoutManager(this, 3));
+        intakeRecycler.setAdapter(new RecyclerView.Adapter<IntakeViewHolder>() {
+            @NonNull
+            @Override
+            public IntakeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_intake_chip, parent, false);
+                return new IntakeViewHolder(v);
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull IntakeViewHolder holder, int position) {
+                String intake = intakes.get(position);
+                holder.text.setText(intake);
+                holder.itemView.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    confirmSelection(intake);
+                });
+            }
+
+            @Override
+            public int getItemCount() { return intakes.size(); }
+        });
+
+        dialog.show();
+    }
+
+    private void confirmSelection(String intake) {
+        if (selectedDegree == null) return;
+
+        if (isBrowseMode) {
+            // If just browsing, go to course list for that degree
+            Intent intent = new Intent(this, com.bravem.app.ui.papers.CourseListActivity.class);
+            intent.putExtra(com.bravem.app.ui.papers.CourseListActivity.EXTRA_DEGREE_ID, selectedDegree.getId());
+            intent.putExtra(com.bravem.app.ui.papers.CourseListActivity.EXTRA_DEGREE_NAME, selectedDegree.getName());
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        continueButton.setEnabled(false);
+        loadingIndicator.setVisibility(View.VISIBLE);
+
+        if (regEmail != null) {
+            // New Registration Flow
+            authRepository.register(regName, regEmail, regPassword,
+                    selectedDegree.getId(), selectedDegree.getName(), intake,
+                    new DataCallback<User>() {
+                        @Override
+                        public void onSuccess(User user) {
+                            Intent intent = new Intent(SelectDegreeActivity.this, DashboardActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            loadingIndicator.setVisibility(View.GONE);
+                            continueButton.setEnabled(true);
+                            Toast.makeText(SelectDegreeActivity.this,
+                                    e.getMessage() != null ? e.getMessage() : getString(R.string.error_generic),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+        } else {
+            // Re-selecting degree for existing user
+            String uid = sessionManager.getUid();
+            if (uid == null) return;
+
+            authRepository.updateUserDegree(uid, selectedDegree.getId(), selectedDegree.getName(), intake,
+                    new DataCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            startActivity(new Intent(SelectDegreeActivity.this, DashboardActivity.class));
+                            finish();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            loadingIndicator.setVisibility(View.GONE);
+                            continueButton.setEnabled(true);
+                            Toast.makeText(SelectDegreeActivity.this, R.string.error_generic, Toast.LENGTH_LONG).show();
+                        }
+                    });
+        }
+    }
+
+    static class IntakeViewHolder extends RecyclerView.ViewHolder {
+        TextView text;
+        IntakeViewHolder(View v) {
+            super(v);
+            text = v.findViewById(R.id.text_intake);
+        }
+    }
+}

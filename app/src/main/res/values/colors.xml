@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand palette: academic ink & parchment theme -->
+    <color name="ink_900">#1B2A4A</color>
+    <color name="ink_700">#28395C</color>
+    <color name="ink_500">#3D5278</color>
+    <color name="ink_100">#E7EBF2</color>
+
+    <color name="parchment_50">#FBF9F4</color>
+    <color name="parchment_100">#F7F3EA</color>
+    <color name="parchment_200">#EFE7D6</color>
+
+    <color name="amber_600">#D98E3F</color>
+    <color name="amber_700">#BD7530</color>
+    <color name="amber_100">#FBE9D2</color>
+
+    <color name="success_600">#3F7D58</color>
+    <color name="success_100">#DCEEE2</color>
+
+    <color name="error_600">#B3463C</color>
+    <color name="error_100">#F6DDDA</color>
+
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#5C5A52</color>
+    <color name="text_on_ink">#F7F3EA</color>
+    <color name="text_hint">#9A9788</color>
+
+    <color name="divider">#E3DDCB</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="scrim">#66000000</color>
+</resources>
