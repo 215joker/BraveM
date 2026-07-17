@@ -24,6 +24,7 @@ import com.bravem.app.model.Degree;
 import com.bravem.app.model.User;
 import com.bravem.app.ui.dashboard.DashboardActivity;
 import com.bravem.app.utils.SessionManager;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
@@ -45,6 +46,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
     private View btnAddMissing;
     private CircularProgressIndicator loadingIndicator;
     private View emptyState;
+    private android.widget.EditText searchInput;
 
     private DegreeRepository degreeRepository;
     private AuthRepository authRepository;
@@ -53,11 +55,16 @@ public class SelectDegreeActivity extends AppCompatActivity {
     private Degree selectedDegree;
     private String regName, regEmail, regPassword;
     private boolean isBrowseMode = false;
+    private List<Degree> allDegrees = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_select_degree);
+
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(R.id.btn_continue));
 
         isBrowseMode = getIntent().getBooleanExtra(EXTRA_BROWSE_MODE, false);
         regName = getIntent().getStringExtra(RegisterActivity.EXTRA_NAME);
@@ -73,6 +80,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
         btnAddMissing = findViewById(R.id.btn_add_missing);
         loadingIndicator = findViewById(R.id.progress_loading);
         emptyState = findViewById(R.id.empty_state);
+        searchInput = findViewById(R.id.edit_search);
 
         btnAddMissing.setOnClickListener(v -> showAddDegreeDialog());
 
@@ -85,6 +93,19 @@ public class SelectDegreeActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
+
+        searchInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterDegrees(s.toString().trim());
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
 
         continueButton.setEnabled(false);
         continueButton.setOnClickListener(v -> showIntakeBottomSheet());
@@ -99,6 +120,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
             @Override
             public void onSuccess(List<Degree> degrees) {
                 loadingIndicator.setVisibility(View.GONE);
+                allDegrees = degrees;
                 adapter.submitList(degrees);
                 emptyState.setVisibility(degrees.isEmpty() ? View.VISIBLE : View.GONE);
             }
@@ -109,6 +131,23 @@ public class SelectDegreeActivity extends AppCompatActivity {
                 Toast.makeText(SelectDegreeActivity.this, R.string.error_generic, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void filterDegrees(String query) {
+        if (query.isEmpty()) {
+            adapter.submitList(allDegrees, false);
+            return;
+        }
+
+        List<Degree> filtered = new ArrayList<>();
+        String lowerQuery = query.toLowerCase();
+        for (Degree d : allDegrees) {
+            if (d.getName().toLowerCase().contains(lowerQuery) ||
+                    (d.getDescription() != null && d.getDescription().toLowerCase().contains(lowerQuery))) {
+                filtered.add(d);
+            }
+        }
+        adapter.submitList(filtered, true);
     }
 
     private void showAddDegreeDialog() {
@@ -203,10 +242,11 @@ public class SelectDegreeActivity extends AppCompatActivity {
         if (selectedDegree == null) return;
 
         if (isBrowseMode) {
-            // If just browsing, go to course list for that degree
-            Intent intent = new Intent(this, com.bravem.app.ui.papers.CourseListActivity.class);
-            intent.putExtra(com.bravem.app.ui.papers.CourseListActivity.EXTRA_DEGREE_ID, selectedDegree.getId());
-            intent.putExtra(com.bravem.app.ui.papers.CourseListActivity.EXTRA_DEGREE_NAME, selectedDegree.getName());
+            // If just browsing, go to degree papers for that degree and intake
+            Intent intent = new Intent(this, com.bravem.app.ui.papers.DegreePapersActivity.class);
+            intent.putExtra(com.bravem.app.ui.papers.DegreePapersActivity.EXTRA_DEGREE_ID, selectedDegree.getId());
+            intent.putExtra(com.bravem.app.ui.papers.DegreePapersActivity.EXTRA_DEGREE_NAME, selectedDegree.getName());
+            intent.putExtra(com.bravem.app.ui.papers.DegreePapersActivity.EXTRA_INTAKE, intake);
             startActivity(intent);
             finish();
             return;

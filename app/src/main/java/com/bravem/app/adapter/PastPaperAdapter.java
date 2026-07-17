@@ -25,6 +25,7 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
     public interface OnPaperActionListener {
         void onPaperClick(PastPaper paper);
         void onDownloadClick(PastPaper paper);
+        void onPinClick(PastPaper paper);
     }
 
     public interface OnAdminActionListener {
@@ -33,6 +34,7 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
     }
 
     private final List<PastPaper> papers = new ArrayList<>();
+    private final List<PastPaper> allPapers = new ArrayList<>();
     private final OnPaperActionListener actionListener;
     private OnAdminActionListener adminActionListener; // optional
 
@@ -45,8 +47,21 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
     }
 
     public void submitList(List<PastPaper> newPapers) {
+        allPapers.clear();
+        allPapers.addAll(newPapers);
+        filter("");
+    }
+
+    public void filter(String query) {
         papers.clear();
-        papers.addAll(newPapers);
+        String lowerQuery = query.toLowerCase();
+        for (PastPaper p : allPapers) {
+            if (p.getTitle().toLowerCase().contains(lowerQuery) ||
+                    (p.getCourseCode() != null && p.getCourseCode().toLowerCase().contains(lowerQuery)) ||
+                    (p.getCourseName() != null && p.getCourseName().toLowerCase().contains(lowerQuery))) {
+                papers.add(p);
+            }
+        }
         notifyDataSetChanged();
     }
 
@@ -83,6 +98,7 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
         private final TextView metaView;
         private final TextView fileTypeBadge;
         private final ImageView downloadButton;
+        private final ImageView pinButton;
         private final View adminBar;
         private final TextView approveToggle;
         private final View deleteButton;
@@ -93,6 +109,7 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
             metaView = itemView.findViewById(R.id.text_paper_meta);
             fileTypeBadge = itemView.findViewById(R.id.badge_file_type);
             downloadButton = itemView.findViewById(R.id.btn_download);
+            pinButton = itemView.findViewById(R.id.btn_pin);
             adminBar = itemView.findViewById(R.id.layout_admin_bar);
             approveToggle = itemView.findViewById(R.id.text_approve_toggle);
             deleteButton = itemView.findViewById(R.id.btn_delete_paper);
@@ -113,6 +130,11 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
 
             itemView.setOnClickListener(v -> actionListener.onPaperClick(paper));
             downloadButton.setOnClickListener(v -> actionListener.onDownloadClick(paper));
+            
+            if (pinButton != null) {
+                pinButton.setImageResource(paper.isPinned() ? R.drawable.ic_pin : R.drawable.ic_pin_outline);
+                pinButton.setOnClickListener(v -> actionListener.onPinClick(paper));
+            }
 
             if (adminActionListener != null) {
                 adminBar.setVisibility(View.VISIBLE);

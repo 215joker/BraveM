@@ -16,6 +16,7 @@ import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.PaperRepository;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.List;
@@ -37,8 +38,12 @@ public class PaperListActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_course_list); // reuses the same header+list shell
+
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         paperRepository = new PaperRepository(this);
 
@@ -64,6 +69,11 @@ public class PaperListActivity extends AppCompatActivity {
             @Override
             public void onDownloadClick(PastPaper paper) {
                 downloadPaper(paper);
+            }
+
+            @Override
+            public void onPinClick(PastPaper paper) {
+                togglePin(paper);
             }
         });
 
@@ -92,6 +102,21 @@ public class PaperListActivity extends AppCompatActivity {
             public void onError(Exception e) {
                 progressIndicator.setVisibility(View.GONE);
                 Toast.makeText(PaperListActivity.this, R.string.error_generic, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void togglePin(PastPaper paper) {
+        paperRepository.togglePin(paper.getId(), new DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isPinned) {
+                String courseId = getIntent().getStringExtra(EXTRA_COURSE_ID);
+                if (courseId != null) loadPapers(courseId);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(PaperListActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

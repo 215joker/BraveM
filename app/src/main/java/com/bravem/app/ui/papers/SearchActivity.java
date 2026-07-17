@@ -14,9 +14,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bravem.app.R;
 import com.bravem.app.adapter.PastPaperAdapter;
 import com.bravem.app.data.DataCallback;
+import com.bravem.app.data.LogRepository;
 import com.bravem.app.data.PaperRepository;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
+import com.bravem.app.utils.SessionManager;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -32,15 +35,23 @@ public class SearchActivity extends AppCompatActivity {
     private View backButton;
 
     private PaperRepository paperRepository;
+    private LogRepository logRepository;
+    private SessionManager sessionManager;
     private final android.os.Handler debounceHandler = new android.os.Handler();
     private Runnable pendingSearch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
 
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(android.R.id.content));
+
         paperRepository = new PaperRepository(this);
+        logRepository = new LogRepository(this);
+        sessionManager = new SessionManager(this);
 
         searchInput = findViewById(R.id.input_search);
         recyclerView = findViewById(R.id.recycler_results);
@@ -64,6 +75,11 @@ public class SearchActivity extends AppCompatActivity {
                 FileUtils.downloadFile(SearchActivity.this, paper.getFileUrl(),
                         paper.getFileName() != null ? paper.getFileName() : paper.getTitle());
                 Toast.makeText(SearchActivity.this, R.string.downloading, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onPinClick(PastPaper paper) {
+                togglePin(paper);
             }
         });
 
@@ -101,6 +117,7 @@ public class SearchActivity extends AppCompatActivity {
 
     private void performSearch(String query) {
         progressIndicator.setVisibility(View.VISIBLE);
+        logRepository.logSearch(query, sessionManager.getEmail());
         paperRepository.searchPapersByTitlePrefix(query, new DataCallback<List<PastPaper>>() {
             @Override
             public void onSuccess(List<PastPaper> papers) {
@@ -113,6 +130,20 @@ public class SearchActivity extends AppCompatActivity {
             public void onError(Exception e) {
                 progressIndicator.setVisibility(View.GONE);
                 Toast.makeText(SearchActivity.this, R.string.error_generic, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void togglePin(PastPaper paper) {
+        paperRepository.togglePin(paper.getId(), new DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isPinned) {
+                performSearch(searchInput.getText().toString().trim());
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(SearchActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

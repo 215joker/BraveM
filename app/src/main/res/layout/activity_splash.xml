@@ -6,23 +6,10 @@
     android:gravity="center"
     android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="serif"
-        android:text="BraveM"
-        android:textColor="@color/text_on_ink"
-        android:textSize="40sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:fontFamily="sans-serif"
-        android:letterSpacing="0.04"
-        android:text="@string/app_tagline"
-        android:textColor="@color/amber_600"
-        android:textSize="14sp" />
+    <ImageView
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:src="@drawable/ic_app_logo_foreground"
+        android:contentDescription="@string/app_name" />
 
 </LinearLayout>

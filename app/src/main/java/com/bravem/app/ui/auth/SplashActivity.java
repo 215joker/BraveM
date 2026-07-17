@@ -5,7 +5,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.bravem.app.data.AuthRepository;
 import com.bravem.app.data.DataCallback;
@@ -26,8 +30,15 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(com.bravem.app.R.layout.activity_splash);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
         authRepository = new AuthRepository(this);
 
@@ -36,12 +47,6 @@ public class SplashActivity extends AppCompatActivity {
 
     private void route() {
         SessionManager session = new SessionManager(this);
-
-        if (session.getUniversity() == null) {
-            startActivity(new Intent(this, SelectUniversityActivity.class));
-            finish();
-            return;
-        }
 
         if (!authRepository.isLoggedIn()) {
             startActivity(new Intent(this, LoginActivity.class));
@@ -56,7 +61,7 @@ public class SplashActivity extends AppCompatActivity {
                     goToLogin();
                     return;
                 }
-                session.saveSession(user.getUid(), user.getFullName(), user.getRole(),
+                session.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
                         user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
                 routeBasedOnSession(session);
             }

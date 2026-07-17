@@ -1,7 +1,11 @@
 package com.bravem.app.ui.admin;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -14,6 +18,7 @@ import com.bravem.app.adapter.PastPaperAdapter;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.PaperRepository;
 import com.bravem.app.model.PastPaper;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.List;
@@ -25,13 +30,18 @@ public class ManagePapersActivity extends AppCompatActivity {
     private CircularProgressIndicator progressIndicator;
     private View emptyState;
     private View backButton;
+    private EditText etSearch;
 
     private PaperRepository paperRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_course_list); // reuses header+list shell
+
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         paperRepository = new PaperRepository(this);
 
@@ -39,10 +49,29 @@ public class ManagePapersActivity extends AppCompatActivity {
         progressIndicator = findViewById(R.id.progress_indicator);
         emptyState = findViewById(R.id.empty_state);
         backButton = findViewById(R.id.btn_back);
+        etSearch = findViewById(R.id.et_search);
+
         backButton.setOnClickListener(v -> finish());
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (adapter != null) adapter.filter(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
 
         ((android.widget.TextView) findViewById(R.id.text_title)).setText(R.string.manage_papers);
         ((android.widget.TextView) findViewById(R.id.empty_state)).setText(R.string.no_papers_found);
+
+        View btnAdd = findViewById(R.id.btn_add_paper);
+        btnAdd.setVisibility(View.VISIBLE);
+        btnAdd.setOnClickListener(v -> startActivity(new Intent(this, com.bravem.app.ui.upload.UploadPaperActivity.class)));
 
         adapter = new PastPaperAdapter(new PastPaperAdapter.OnPaperActionListener() {
             @Override
@@ -53,6 +82,11 @@ public class ManagePapersActivity extends AppCompatActivity {
             @Override
             public void onDownloadClick(PastPaper paper) {
                 // Admin screen focuses on moderation, not downloading.
+            }
+
+            @Override
+            public void onPinClick(PastPaper paper) {
+                // Admin usually doesn't need to pin, but we must implement the interface
             }
         });
 

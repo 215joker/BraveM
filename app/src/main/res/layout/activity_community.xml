@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/parchment_100"
+    android:orientation="vertical">
+
+    <!-- Custom Toolbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/ink_900"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cancel"
+            android:src="@drawable/ic_back"
+            app:tint="@color/text_on_ink" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:fontFamily="serif"
+            android:text="@string/community"
+            android:textColor="@color/text_on_ink"
+            android:textSize="19sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="20dp">
+
+            <!-- Search Section -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/search_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:hintEnabled="false"
+                app:startIconDrawable="@drawable/ic_search"
+                app:startIconTint="@color/ink_900">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/search_university_students"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:padding="12dp" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Recommendations Section -->
+            <TextView
+                android:id="@+id/text_recommendations_header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                style="@style/TextAppearance.BraveM.Title"
+                android:text="@string/recommendations" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_recommendations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- Friends / Search Results -->
+            <TextView
+                android:id="@+id/text_results_header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                style="@style/TextAppearance.BraveM.Title"
+                android:text="@string/friends" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_students"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <TextView
+                android:id="@+id/empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="30dp"
+                android:text="@string/no_students_found"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

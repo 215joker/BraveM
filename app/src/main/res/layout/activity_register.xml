@@ -27,14 +27,16 @@
                 android:orientation="vertical"
                 android:padding="24dp">
 
+                <include layout="@layout/layout_app_logo_header" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="16dp"
                     android:fontFamily="serif"
                     android:text="@string/register"
                     android:textColor="@color/ink_900"
-                    android:textSize="28sp"
+                    android:textSize="22sp"
                     android:textStyle="bold"
                     android:gravity="center" />
 
@@ -54,13 +56,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="University"
-                    android:enabled="false"
                     app:startIconDrawable="@android:drawable/ic_menu_myplaces">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/input_university"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:clickable="true"
+                        android:cursorVisible="false"
                         android:inputType="none"
                         android:textColor="@color/text_primary" />
                 </com.google.android.material.textfield.TextInputLayout>

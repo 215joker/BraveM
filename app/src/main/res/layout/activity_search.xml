@@ -7,13 +7,14 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/layout_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/ink_900"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="8dp"
-        android:paddingTop="40dp"
+        android:paddingTop="12dp"
         android:paddingBottom="16dp">
 
         <ImageButton
@@ -32,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:background="@android:color/transparent"
-            android:hint="@string/search_papers"
+            android:hint="Search papers..."
             android:textColor="@color/text_on_ink"
             android:textColorHint="@color/parchment_200"
             android:textSize="16sp"

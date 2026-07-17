@@ -16,7 +16,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bravem.app.R;
-import com.bravem.app.data.CourseRepository;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.DegreeRepository;
 import com.bravem.app.data.PaperRepository;
@@ -25,6 +24,7 @@ import com.bravem.app.model.Degree;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
 import com.bravem.app.utils.SessionManager;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
@@ -38,15 +38,18 @@ public class UploadPaperActivity extends AppCompatActivity {
     private View pickFileButton;
     private TextView selectedFileText;
     private TextInputEditText titleInput;
+    private TextInputEditText universityInput;
     private AutoCompleteTextView degreeDropdown;
-    private AutoCompleteTextView courseDropdown;
+    private TextInputEditText intakeInput;
     private TextInputEditText yearInput;
     private AutoCompleteTextView semesterDropdown;
+    private MaterialButton addBtn;
     private MaterialButton submitButton;
+    private MaterialButton submitAllBtn;
+    private TextView queueCountText;
     private LinearProgressIndicator uploadProgress;
 
     private DegreeRepository degreeRepository;
-    private CourseRepository courseRepository;
     private PaperRepository paperRepository;
 
     private SessionManager sessionManager;
@@ -56,9 +59,21 @@ public class UploadPaperActivity extends AppCompatActivity {
     private long selectedFileSize;
 
     private List<Degree> degrees = new ArrayList<>();
-    private List<Course> courses = new ArrayList<>();
     private Degree chosenDegree;
-    private Course chosenCourse;
+
+    private List<QueuedPaper> paperQueue = new ArrayList<>();
+
+    private static class QueuedPaper {
+        Uri uri;
+        String fileName;
+        PastPaper meta;
+
+        QueuedPaper(Uri uri, String fileName, PastPaper meta) {
+            this.uri = uri;
+            this.fileName = fileName;
+            this.meta = meta;
+        }
+    }
 
     private final ActivityResultLauncher<Intent> filePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -72,11 +87,14 @@ public class UploadPaperActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_upload_paper);
 
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(R.id.btn_submit_all));
+
         degreeRepository = new DegreeRepository(this);
-        courseRepository = new CourseRepository(this);
         paperRepository = new PaperRepository(this);
         sessionManager = new SessionManager(this);
 
@@ -84,21 +102,28 @@ public class UploadPaperActivity extends AppCompatActivity {
         pickFileButton = findViewById(R.id.btn_pick_file);
         selectedFileText = findViewById(R.id.text_selected_file);
         titleInput = findViewById(R.id.input_title);
+        universityInput = findViewById(R.id.input_university);
         degreeDropdown = findViewById(R.id.dropdown_degree);
-        courseDropdown = findViewById(R.id.dropdown_course);
+        intakeInput = findViewById(R.id.input_intake);
         yearInput = findViewById(R.id.input_year);
         semesterDropdown = findViewById(R.id.dropdown_semester);
+        addBtn = findViewById(R.id.btn_add);
         submitButton = findViewById(R.id.btn_submit);
+        submitAllBtn = findViewById(R.id.btn_submit_all);
+        queueCountText = findViewById(R.id.text_queue_count);
         uploadProgress = findViewById(R.id.upload_progress);
+
+        universityInput.setText(sessionManager.getUniversity());
+        intakeInput.setText(sessionManager.getIntake());
 
         backButton.setOnClickListener(v -> finish());
         pickFileButton.setOnClickListener(v -> launchFilePicker());
+        addBtn.setOnClickListener(v -> addToQueue());
         submitButton.setOnClickListener(v -> attemptUpload());
+        submitAllBtn.setOnClickListener(v -> uploadQueue());
 
         setupSemesterDropdown();
         loadDegrees();
-
-        courseDropdown.setEnabled(false);
     }
 
     private void setupSemesterDropdown() {
@@ -121,10 +146,6 @@ public class UploadPaperActivity extends AppCompatActivity {
 
                 degreeDropdown.setOnItemClickListener((parent, view, position, id) -> {
                     chosenDegree = degrees.get(position);
-                    courseDropdown.setText("", false);
-                    courseDropdown.setEnabled(true);
-                    chosenCourse = null;
-                    loadCoursesForDegree(chosenDegree.getId());
                 });
 
                 String myDegreeId = sessionManager.getDegreeId();
@@ -133,35 +154,10 @@ public class UploadPaperActivity extends AppCompatActivity {
                         if (d.getId().equals(myDegreeId)) {
                             chosenDegree = d;
                             degreeDropdown.setText(d.getName(), false);
-                            courseDropdown.setEnabled(true);
-                            loadCoursesForDegree(d.getId());
                             break;
                         }
                     }
                 }
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(UploadPaperActivity.this, R.string.error_generic, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadCoursesForDegree(String degreeId) {
-        courseRepository.fetchCoursesForDegree(degreeId, new DataCallback<List<Course>>() {
-            @Override
-            public void onSuccess(List<Course> result) {
-                courses = result;
-                List<String> names = new ArrayList<>();
-                for (Course c : result) names.add(c.getName() + " (" + c.getCode() + ")");
-
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(UploadPaperActivity.this,
-                        android.R.layout.simple_list_item_1, names);
-                courseDropdown.setAdapter(adapter);
-
-                courseDropdown.setOnItemClickListener((parent, view, position, id) ->
-                        chosenCourse = courses.get(position));
             }
 
             @Override
@@ -192,50 +188,102 @@ public class UploadPaperActivity extends AppCompatActivity {
         if ("unknown".equals(type)) {
             Toast.makeText(this, "Please select a PDF or Word document.", Toast.LENGTH_LONG).show();
             selectedFileUri = null;
+            selectedFileName = null;
+            selectedFileText.setText("");
             return;
         }
 
         selectedFileText.setText(selectedFileName + " (" + FileUtils.humanReadableSize(selectedFileSize) + ")");
     }
 
-    private void attemptUpload() {
+    private void addToQueue() {
+        PastPaper paper = validateInputs();
+        if (paper == null) return;
+
+        if (!paperQueue.isEmpty()) {
+            if (!paperQueue.get(0).meta.getDegreeId().equals(paper.getDegreeId())) {
+                Toast.makeText(this, R.string.bulk_upload_degree_mismatch, Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
+        paperQueue.add(new QueuedPaper(selectedFileUri, selectedFileName, paper));
+        updateQueueUI();
+        clearFileAndTitle();
+        
+        // Lock common fields
+        universityInput.setEnabled(false);
+        degreeDropdown.setEnabled(false);
+        intakeInput.setEnabled(false);
+        yearInput.setEnabled(false);
+        semesterDropdown.setEnabled(false);
+    }
+
+    private void updateQueueUI() {
+        int count = paperQueue.size();
+        if (count > 0) {
+            queueCountText.setVisibility(View.VISIBLE);
+            queueCountText.setText(getString(R.string.queued_papers_count, count));
+            submitAllBtn.setVisibility(View.VISIBLE);
+        } else {
+            queueCountText.setVisibility(View.GONE);
+            submitAllBtn.setVisibility(View.GONE);
+            
+            universityInput.setEnabled(true);
+            degreeDropdown.setEnabled(true);
+            intakeInput.setEnabled(true);
+            yearInput.setEnabled(true);
+            semesterDropdown.setEnabled(true);
+        }
+    }
+
+    private void clearFileAndTitle() {
+        selectedFileUri = null;
+        selectedFileName = null;
+        selectedFileSize = 0;
+        selectedFileText.setText("");
+        titleInput.setText("");
+    }
+
+    private PastPaper validateInputs() {
         String title = titleInput.getText() != null ? titleInput.getText().toString().trim() : "";
+        String university = universityInput.getText() != null ? universityInput.getText().toString().trim() : "";
+        String intake = intakeInput.getText() != null ? intakeInput.getText().toString().trim() : "";
         String yearStr = yearInput.getText() != null ? yearInput.getText().toString().trim() : "";
         String semester = semesterDropdown.getText() != null ? semesterDropdown.getText().toString().trim() : "";
 
         if (selectedFileUri == null) {
             Toast.makeText(this, R.string.select_file, Toast.LENGTH_SHORT).show();
-            return;
+            return null;
         }
         if (TextUtils.isEmpty(title)) {
             Toast.makeText(this, R.string.error_required_field, Toast.LENGTH_SHORT).show();
-            return;
+            return null;
+        }
+        if (TextUtils.isEmpty(university)) {
+            Toast.makeText(this, R.string.error_required_field, Toast.LENGTH_SHORT).show();
+            return null;
         }
         if (chosenDegree == null) {
             Toast.makeText(this, R.string.select_degree, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (chosenCourse == null) {
-            Toast.makeText(this, R.string.select_course, Toast.LENGTH_SHORT).show();
-            return;
+            return null;
         }
         int year;
         try {
             year = Integer.parseInt(yearStr);
         } catch (NumberFormatException e) {
             Toast.makeText(this, R.string.select_year, Toast.LENGTH_SHORT).show();
-            return;
+            return null;
         }
 
         String fileType = FileUtils.detectFileType(selectedFileName);
 
         PastPaper paper = new PastPaper();
         paper.setTitle(title);
+        paper.setUniversity(university);
         paper.setDegreeId(chosenDegree.getId());
         paper.setDegreeName(chosenDegree.getName());
-        paper.setCourseId(chosenCourse.getId());
-        paper.setCourseName(chosenCourse.getName());
-        paper.setCourseCode(chosenCourse.getCode());
+        paper.setIntake(intake);
         paper.setYear(year);
         paper.setSemester(semester);
         paper.setFileType(fileType);
@@ -243,6 +291,13 @@ public class UploadPaperActivity extends AppCompatActivity {
         paper.setUploadedByUid(sessionManager.getUid());
         paper.setUploadedByName(sessionManager.getFullName());
         paper.setApproved(true);
+        
+        return paper;
+    }
+
+    private void attemptUpload() {
+        PastPaper paper = validateInputs();
+        if (paper == null) return;
 
         setUploading(true);
 
@@ -266,9 +321,48 @@ public class UploadPaperActivity extends AppCompatActivity {
                 });
     }
 
+    private void uploadQueue() {
+        if (paperQueue.isEmpty()) return;
+        
+        setUploading(true);
+        uploadNextInQueue();
+    }
+
+    private void uploadNextInQueue() {
+        if (paperQueue.isEmpty()) {
+            setUploading(false);
+            Toast.makeText(this, "All papers uploaded successfully", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
+        QueuedPaper next = paperQueue.get(0);
+        paperRepository.uploadPaper(next.uri, next.fileName, next.meta,
+                percent -> {
+                    // Per-paper progress
+                    runOnUiThread(() -> uploadProgress.setProgress(percent));
+                },
+                new DataCallback<PastPaper>() {
+                    @Override
+                    public void onSuccess(PastPaper result) {
+                        paperQueue.remove(0);
+                        updateQueueUI();
+                        uploadNextInQueue();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        setUploading(false);
+                        Toast.makeText(UploadPaperActivity.this, "Failed at: " + next.meta.getTitle(), Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
     private void setUploading(boolean uploading) {
+        addBtn.setEnabled(!uploading);
         submitButton.setEnabled(!uploading);
-        submitButton.setText(uploading ? getString(R.string.uploading) : getString(R.string.submit));
+        submitAllBtn.setEnabled(!uploading);
+        submitButton.setText(uploading ? getString(R.string.uploading) : getString(R.string.upload));
         uploadProgress.setVisibility(uploading ? View.VISIBLE : View.GONE);
         uploadProgress.setProgress(0);
     }

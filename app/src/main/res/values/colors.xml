@@ -30,4 +30,8 @@
     <color name="black">#000000</color>
     <color name="surface">#FFFFFF</color>
     <color name="scrim">#66000000</color>
+
+    <!-- Logo Colors -->
+    <color name="logo_red">#EB3333</color>
+    <color name="logo_dark">#121212</color>
 </resources>

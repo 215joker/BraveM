@@ -28,6 +28,11 @@ public class User implements Serializable {
     private String profilePicture;
     private String role;
     private long createdAt;
+    private boolean deletionRequested;
+    private long deletionRequestedAt;
+    private boolean isSynced;
+    private boolean isSuspended;
+    private long suspendedUntil;
 
     public User() {
     }
@@ -43,6 +48,9 @@ public class User implements Serializable {
         this.intake = intake;
         this.role = role;
         this.createdAt = createdAt;
+        this.deletionRequested = false;
+        this.deletionRequestedAt = 0;
+        this.isSynced = false;
     }
 
     @NonNull
@@ -132,6 +140,46 @@ public class User implements Serializable {
 
     public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isDeletionRequested() {
+        return deletionRequested;
+    }
+
+    public void setDeletionRequested(boolean deletionRequested) {
+        this.deletionRequested = deletionRequested;
+    }
+
+    public long getDeletionRequestedAt() {
+        return deletionRequestedAt;
+    }
+
+    public void setDeletionRequestedAt(long deletionRequestedAt) {
+        this.deletionRequestedAt = deletionRequestedAt;
+    }
+
+    public boolean isSynced() {
+        return isSynced;
+    }
+
+    public void setSynced(boolean synced) {
+        isSynced = synced;
+    }
+
+    public boolean isSuspended() {
+        return isSuspended;
+    }
+
+    public void setSuspended(boolean suspended) {
+        isSuspended = suspended;
+    }
+
+    public long getSuspendedUntil() {
+        return suspendedUntil;
+    }
+
+    public void setSuspendedUntil(long suspendedUntil) {
+        this.suspendedUntil = suspendedUntil;
     }
 
     public boolean isAdmin() {

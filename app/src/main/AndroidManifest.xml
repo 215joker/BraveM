@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".BraveMApp"
@@ -20,7 +21,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BraveM"
         android:usesCleartextTraffic="false"
-        tools:targetApi="31">
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="35">
 
         <activity
             android:name=".ui.auth.SplashActivity"
@@ -40,6 +42,7 @@
         <activity android:name=".ui.dashboard.DashboardActivity" android:exported="false" />
         <activity android:name=".ui.papers.CourseListActivity" android:exported="false" />
         <activity android:name=".ui.papers.PaperListActivity" android:exported="false" />
+        <activity android:name=".ui.papers.DegreePapersActivity" android:exported="false" />
         <activity android:name=".ui.papers.PaperViewerActivity" android:exported="false" />
         <activity android:name=".ui.papers.SearchActivity" android:exported="false" />
 
@@ -49,8 +52,17 @@
         <activity android:name=".ui.admin.ManageDegreesActivity" android:exported="false" />
         <activity android:name=".ui.admin.ManageCoursesActivity" android:exported="false" />
         <activity android:name=".ui.admin.ManagePapersActivity" android:exported="false" />
+        <activity android:name=".ui.admin.ManageUsersActivity" android:exported="false" />
+        <activity android:name=".ui.admin.SearchLogsActivity" android:exported="false" />
+        <activity android:name=".ui.admin.ClearTempFilesActivity" android:exported="false" />
+        <activity android:name=".ui.admin.ManageUniversitiesActivity" android:exported="false" />
+        <activity android:name=".ui.admin.DeletedUsersActivity" android:exported="false" />
+        <activity android:name=".ui.admin.AdminChatListActivity" android:exported="false" />
 
         <activity android:name=".ui.dashboard.ProfileActivity" android:exported="false" />
+        <activity android:name=".ui.dashboard.NotificationActivity" android:exported="false" />
+        <activity android:name=".ui.community.CommunityActivity" android:exported="false" />
+        <activity android:name=".ui.community.ChatActivity" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

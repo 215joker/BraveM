@@ -37,6 +37,7 @@ public class DegreeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     private final List<Object> displayList = new ArrayList<>();
+    private final List<Degree> allDegrees = new ArrayList<>();
     private final Map<String, List<Degree>> groupedDegrees = new TreeMap<>();
     private final Map<String, Boolean> expandedSchools = new HashMap<>();
     
@@ -59,9 +60,34 @@ public class DegreeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public void submitList(List<Degree> newDegrees) {
+        submitList(newDegrees, false);
+    }
+
+    public void submitList(List<Degree> newDegrees, boolean expandAll) {
+        this.allDegrees.clear();
+        this.allDegrees.addAll(newDegrees);
+        if (expandAll) {
+            for (Degree d : newDegrees) {
+                if (d.getDescription() != null) expandedSchools.put(d.getDescription(), true);
+            }
+        }
+        filter("");
+    }
+
+    public void filter(String query) {
+        List<Degree> filtered = new ArrayList<>();
+        String lowerQuery = query.toLowerCase();
+        for (Degree d : allDegrees) {
+            if (d.getName().toLowerCase().contains(lowerQuery) ||
+                    (d.getUniversity() != null && d.getUniversity().toLowerCase().contains(lowerQuery)) ||
+                    (d.getDescription() != null && d.getDescription().toLowerCase().contains(lowerQuery))) {
+                filtered.add(d);
+            }
+        }
+
         if (isGroupedMode) {
             groupedDegrees.clear();
-            for (Degree degree : newDegrees) {
+            for (Degree degree : filtered) {
                 String school = degree.getDescription() != null ? degree.getDescription() : "Other Programs";
                 if (!groupedDegrees.containsKey(school)) {
                     groupedDegrees.put(school, new ArrayList<>());
@@ -72,7 +98,7 @@ public class DegreeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             updateDisplayList();
         } else {
             displayList.clear();
-            displayList.addAll(newDegrees);
+            displayList.addAll(filtered);
             notifyDataSetChanged();
         }
     }

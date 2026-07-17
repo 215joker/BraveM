@@ -22,6 +22,9 @@ public interface DegreeDao {
     @Query("SELECT * FROM degrees WHERE id = :id LIMIT 1")
     Degree getById(String id);
 
+    @Query("SELECT DISTINCT university FROM degrees WHERE university IS NOT NULL AND university != '' ORDER BY university ASC")
+    List<String> getUniqueUniversities();
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(Degree degree);
 

@@ -64,6 +64,16 @@
             tools:text="PDF" />
 
         <ImageButton
+            android:id="@+id/btn_pin"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Pin Paper"
+            android:src="@drawable/ic_pin_outline"
+            app:tint="@color/ink_500" />
+
+        <ImageButton
             android:id="@+id/btn_download"
             android:layout_width="40dp"
             android:layout_height="40dp"

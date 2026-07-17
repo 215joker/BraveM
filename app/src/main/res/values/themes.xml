@@ -151,4 +151,9 @@
         <item name="cornerSize">28dp</item>
     </style>
 
+    <style name="ShapeAppearance.BraveM.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
 </resources>

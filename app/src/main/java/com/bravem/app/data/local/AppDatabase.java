@@ -6,12 +6,16 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
+import com.bravem.app.model.ChatMessage;
 import com.bravem.app.model.Course;
 import com.bravem.app.model.Degree;
+import com.bravem.app.model.Friendship;
+import com.bravem.app.model.Notification;
 import com.bravem.app.model.PastPaper;
+import com.bravem.app.model.SearchLog;
 import com.bravem.app.model.User;
 
-@Database(entities = {User.class, Degree.class, Course.class, PastPaper.class}, version = 17, exportSchema = false)
+@Database(entities = {User.class, Degree.class, Course.class, PastPaper.class, Notification.class, SearchLog.class, Friendship.class, ChatMessage.class}, version = 23, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     private static volatile AppDatabase INSTANCE;
 
@@ -19,6 +23,10 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract DegreeDao degreeDao();
     public abstract CourseDao courseDao();
     public abstract PaperDao paperDao();
+    public abstract NotificationDao notificationDao();
+    public abstract SearchLogDao searchLogDao();
+    public abstract FriendshipDao friendshipDao();
+    public abstract ChatMessageDao chatMessageDao();
 
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
@@ -60,6 +68,12 @@ public abstract class AppDatabase extends RoomDatabase {
     private static void seedInitialData(AppDatabase db) {
         String eden = "Eden University";
         long now = System.currentTimeMillis();
+
+        // Seed Admin User
+        db.userDao().insert(new com.bravem.app.model.User(
+                "admin_uid", "BraveM Admin", "admin@bravem.com", "admin123",
+                eden, null, null, null, com.bravem.app.model.User.ROLE_ADMIN, now
+        ));
 
         // School of Medicine and Health Sciences
         String somhs = "School of Medicine and Health Sciences";

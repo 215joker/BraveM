@@ -12,6 +12,7 @@ public class SessionManager {
 
     private static final String PREFS_NAME = "bravem_session";
     private static final String KEY_UID = "uid";
+    private static final String KEY_EMAIL = "email";
     private static final String KEY_UNIVERSITY = "university";
     private static final String KEY_FULL_NAME = "full_name";
     private static final String KEY_ROLE = "role";
@@ -19,6 +20,7 @@ public class SessionManager {
     private static final String KEY_DEGREE_NAME = "degree_name";
     private static final String KEY_INTAKE = "intake";
     private static final String KEY_THEME = "app_theme";
+    private static final String KEY_LAST_CHECKED = "last_checked";
 
     private final SharedPreferences prefs;
 
@@ -26,9 +28,18 @@ public class SessionManager {
         prefs = context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    public void saveSession(String uid, String fullName, String role, String university, String degreeId, String degreeName, String intake) {
+    public void setLastChecked(long timestamp) {
+        prefs.edit().putLong(KEY_LAST_CHECKED, timestamp).apply();
+    }
+
+    public long getLastChecked() {
+        return prefs.getLong(KEY_LAST_CHECKED, 0);
+    }
+
+    public void saveSession(String uid, String email, String fullName, String role, String university, String degreeId, String degreeName, String intake) {
         prefs.edit()
                 .putString(KEY_UID, uid)
+                .putString(KEY_EMAIL, email)
                 .putString(KEY_FULL_NAME, fullName)
                 .putString(KEY_ROLE, role)
                 .putString(KEY_UNIVERSITY, university)
@@ -46,6 +57,10 @@ public class SessionManager {
                 .apply();
     }
 
+    public void updateIntake(String intake) {
+        prefs.edit().putString(KEY_INTAKE, intake).apply();
+    }
+
     public String getIntake() {
         return prefs.getString(KEY_INTAKE, null);
     }
@@ -60,6 +75,10 @@ public class SessionManager {
 
     public String getUid() {
         return prefs.getString(KEY_UID, null);
+    }
+
+    public String getEmail() {
+        return prefs.getString(KEY_EMAIL, "guest@bravem.com");
     }
 
     public String getFullName() {

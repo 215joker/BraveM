@@ -11,13 +11,14 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/layout_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/ink_900"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="8dp"
-            android:paddingTop="40dp"
+            android:paddingTop="12dp"
             android:paddingBottom="16dp">
 
             <ImageButton
@@ -30,6 +31,7 @@
                 app:tint="@color/text_on_ink" />
 
             <TextView
+                android:id="@+id/text_title"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
@@ -41,6 +43,28 @@
                 android:textStyle="bold" />
 
         </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/search_layout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="12dp"
+            app:hintEnabled="false"
+            app:startIconDrawable="@drawable/ic_search"
+            app:startIconTint="@color/ink_900">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Search Universities..."
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:padding="12dp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
         <FrameLayout
             android:layout_width="match_parent"

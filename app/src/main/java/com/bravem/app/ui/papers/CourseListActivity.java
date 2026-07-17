@@ -15,6 +15,7 @@ import com.bravem.app.adapter.CourseAdapter;
 import com.bravem.app.data.CourseRepository;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.model.Course;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.List;
@@ -41,8 +42,12 @@ public class CourseListActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_course_list);
+
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         courseRepository = new CourseRepository(this);
 

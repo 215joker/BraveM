@@ -21,6 +21,8 @@ public class PastPaper implements Serializable {
     private String title;
     private String degreeId;
     private String degreeName;
+    private String university;
+    private String intake;
     private String courseId;
     private String courseName;
     private String courseCode;
@@ -34,6 +36,8 @@ public class PastPaper implements Serializable {
     private String uploadedByName;
     private long createdAt;
     private boolean approved;
+    private boolean pinned;
+    private boolean isSynced;
 
     public PastPaper() {
     }
@@ -43,6 +47,14 @@ public class PastPaper implements Serializable {
                       int year, String semester, String fileType, String fileUrl,
                       String fileName, long fileSizeBytes, String uploadedByUid,
                       String uploadedByName, long createdAt, boolean approved) {
+        this(id, title, degreeId, degreeName, courseId, courseName, courseCode, year, semester, fileType, fileUrl, fileName, fileSizeBytes, uploadedByUid, uploadedByName, createdAt, approved, false);
+    }
+
+    public PastPaper(@NonNull String id, String title, String degreeId, String degreeName,
+                      String courseId, String courseName, String courseCode,
+                      int year, String semester, String fileType, String fileUrl,
+                      String fileName, long fileSizeBytes, String uploadedByUid,
+                      String uploadedByName, long createdAt, boolean approved, boolean pinned) {
         this.id = id;
         this.title = title;
         this.degreeId = degreeId;
@@ -60,6 +72,8 @@ public class PastPaper implements Serializable {
         this.uploadedByName = uploadedByName;
         this.createdAt = createdAt;
         this.approved = approved;
+        this.pinned = pinned;
+        this.isSynced = false;
     }
 
     @NonNull
@@ -93,6 +107,22 @@ public class PastPaper implements Serializable {
 
     public void setDegreeName(String degreeName) {
         this.degreeName = degreeName;
+    }
+
+    public String getUniversity() {
+        return university;
+    }
+
+    public void setUniversity(String university) {
+        this.university = university;
+    }
+
+    public String getIntake() {
+        return intake;
+    }
+
+    public void setIntake(String intake) {
+        this.intake = intake;
     }
 
     public String getCourseId() {
@@ -197,5 +227,21 @@ public class PastPaper implements Serializable {
 
     public void setApproved(boolean approved) {
         this.approved = approved;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
+    public boolean isSynced() {
+        return isSynced;
+    }
+
+    public void setSynced(boolean synced) {
+        isSynced = synced;
     }
 }

@@ -5,7 +5,11 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.bravem.app.R;
 import com.bravem.app.model.PastPaper;
@@ -33,8 +37,15 @@ public class PaperViewerActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_paper_viewer);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(0, systemBars.top, 0, systemBars.bottom);
+            return insets;
+        });
 
         pdfView = findViewById(R.id.pdf_view);
         docxPlaceholder = findViewById(R.id.layout_docx_placeholder);

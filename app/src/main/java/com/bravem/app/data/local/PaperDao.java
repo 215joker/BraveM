@@ -28,8 +28,17 @@ public interface PaperDao {
     @Query("SELECT * FROM papers WHERE uploadedByUid = :uid ORDER BY createdAt DESC")
     List<PastPaper> getByUploader(String uid);
 
-    @Query("SELECT * FROM papers WHERE degreeId = :degreeId AND approved = 1 ORDER BY createdAt DESC")
-    List<PastPaper> getByDegreeId(String degreeId);
+    @Query("SELECT * FROM papers WHERE degreeId = :degreeId AND approved = 1 AND uploadedByUid != :currentUserId ORDER BY createdAt DESC")
+    List<PastPaper> getByDegreeId(String degreeId, String currentUserId);
+
+    @Query("SELECT * FROM papers WHERE degreeId = :degreeId AND year = :year AND semester = :semester AND approved = 1 AND uploadedByUid != :currentUserId ORDER BY createdAt DESC")
+    List<PastPaper> getRecommended(String degreeId, int year, String semester, String currentUserId);
+
+    @Query("SELECT * FROM papers WHERE pinned = 1 ORDER BY createdAt DESC")
+    List<PastPaper> getPinned();
+
+    @Query("SELECT COUNT(*) FROM papers WHERE pinned = 1")
+    int getPinnedCount();
 
     @Query("SELECT * FROM papers WHERE title LIKE '%' || :query || '%' AND approved = 1")
     List<PastPaper> search(String query);
@@ -42,4 +51,7 @@ public interface PaperDao {
 
     @Delete
     void delete(PastPaper paper);
+
+    @Query("SELECT * FROM papers WHERE isSynced = 0")
+    List<PastPaper> getUnsynced();
 }

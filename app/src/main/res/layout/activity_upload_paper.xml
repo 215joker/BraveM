@@ -7,13 +7,14 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/layout_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/ink_900"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="8dp"
-        android:paddingTop="40dp"
+        android:paddingTop="12dp"
         android:paddingBottom="16dp">
 
         <ImageButton
@@ -101,6 +102,19 @@
                 style="@style/Widget.BraveM.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="@string/university">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_university"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.BraveM.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 app:endIconMode="dropdown_menu"
                 android:hint="@string/select_degree">
@@ -117,14 +131,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                app:endIconMode="dropdown_menu"
-                android:hint="@string/select_course">
+                android:hint="@string/intake">
 
-                <AutoCompleteTextView
-                    android:id="@+id/dropdown_course"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_intake"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none" />
+                    android:layout_height="wrap_content" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -175,13 +187,49 @@
                 app:indicatorColor="@color/amber_600"
                 app:trackColor="@color/ink_100" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_submit"
-                style="@style/Widget.BraveM.Button"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="@string/submit" />
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_add"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/add" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_submit"
+                    style="@style/Widget.BraveM.Button"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="@string/upload" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/text_queue_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/queued_papers_count"
+                android:textColor="@color/ink_700"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_submit_all"
+                style="@style/Widget.BraveM.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/submit_all_queued"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

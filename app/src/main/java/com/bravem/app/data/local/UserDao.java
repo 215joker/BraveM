@@ -21,4 +21,22 @@ public interface UserDao {
 
     @Update
     void update(User user);
+
+    @androidx.room.Delete
+    void delete(User user);
+
+    @Query("UPDATE users SET role = :role WHERE uid = :uid")
+    void updateRole(String uid, String role);
+
+    @Query("SELECT * FROM users")
+    java.util.List<User> getAll();
+
+    @Query("SELECT * FROM users WHERE isSynced = 0")
+    java.util.List<User> getUnsynced();
+
+    @Query("SELECT * FROM users WHERE (university LIKE '%' || :query || '%' OR fullName LIKE '%' || :query || '%') AND role = 'student' AND uid != :currentUserId")
+    java.util.List<User> searchStudents(String query, String currentUserId);
+
+    @Query("SELECT * FROM users WHERE university = :university AND degreeId = :degreeId AND role = 'student' AND uid != :currentUserId ORDER BY intake DESC")
+    java.util.List<User> getRecommendations(String university, String degreeId, String currentUserId);
 }

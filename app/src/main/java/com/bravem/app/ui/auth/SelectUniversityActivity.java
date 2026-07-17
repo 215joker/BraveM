@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.utils.SessionManager;
+import com.bravem.app.utils.UiUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +44,12 @@ public class SelectUniversityActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_select_university);
+
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleBottomInset(findViewById(R.id.recycler_universities));
 
         RecyclerView recyclerView = findViewById(R.id.recycler_universities);
         // Use 2 columns for the grid
@@ -67,7 +72,15 @@ public class SelectUniversityActivity extends AppCompatActivity {
                 holder.text.setText(uni);
                 holder.itemView.setOnClickListener(v -> {
                     sessionManager.setUniversity(uni);
-                    startActivity(new Intent(SelectUniversityActivity.this, LoginActivity.class));
+                    boolean fromLogin = getIntent().getBooleanExtra("from_login", false);
+                    boolean fromRegister = getIntent().getBooleanExtra("from_register", false);
+                    
+                    if (fromLogin || fromRegister) {
+                        finish();
+                    } else {
+                        startActivity(new Intent(SelectUniversityActivity.this, LoginActivity.class));
+                        finish();
+                    }
                 });
             }
 

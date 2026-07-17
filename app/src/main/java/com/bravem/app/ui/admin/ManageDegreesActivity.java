@@ -1,6 +1,8 @@
 package com.bravem.app.ui.admin;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -16,6 +18,7 @@ import com.bravem.app.adapter.DegreeAdapter;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.DegreeRepository;
 import com.bravem.app.model.Degree;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
@@ -29,13 +32,18 @@ public class ManageDegreesActivity extends AppCompatActivity {
     private View emptyState;
     private View backButton;
     private FloatingActionButton fabAdd;
+    private EditText etSearch;
 
     private DegreeRepository degreeRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_degrees);
+
+        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleFabBottomInset(findViewById(R.id.fab_add), 24);
 
         degreeRepository = new DegreeRepository(this);
 
@@ -44,9 +52,23 @@ public class ManageDegreesActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.empty_state);
         backButton = findViewById(R.id.btn_back);
         fabAdd = findViewById(R.id.fab_add);
+        etSearch = findViewById(R.id.et_search);
 
         backButton.setOnClickListener(v -> finish());
         fabAdd.setOnClickListener(v -> showDegreeDialog(null));
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (adapter != null) adapter.filter(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
 
         adapter = new DegreeAdapter(degree -> showDegreeDialog(degree));
         adapter.setActionListener(new DegreeAdapter.OnDegreeActionListener() {
@@ -88,12 +110,10 @@ public class ManageDegreesActivity extends AppCompatActivity {
     private void showDegreeDialog(Degree existing) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_degree, null);
         EditText nameInput = dialogView.findViewById(R.id.input_name);
-        EditText descInput = dialogView.findViewById(R.id.input_description);
         EditText uniInput = dialogView.findViewById(R.id.input_university);
 
         if (existing != null) {
             nameInput.setText(existing.getName());
-            descInput.setText(existing.getDescription());
             uniInput.setText(existing.getUniversity());
         }
 
@@ -102,16 +122,15 @@ public class ManageDegreesActivity extends AppCompatActivity {
                 .setView(dialogView)
                 .setPositiveButton(R.string.save, (dialog, which) -> {
                     String name = nameInput.getText().toString().trim();
-                    String description = descInput.getText().toString().trim();
                     String university = uniInput.getText().toString().trim();
-                    if (name.isEmpty()) {
+                    if (name.isEmpty() || university.isEmpty()) {
                         Toast.makeText(this, R.string.error_required_field, Toast.LENGTH_SHORT).show();
                         return;
                     }
                     if (existing == null) {
-                        createDegree(name, description, university);
+                        createDegree(name, "", university);
                     } else {
-                        updateDegree(existing.getId(), name, description, university);
+                        updateDegree(existing.getId(), name, "", university);
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)

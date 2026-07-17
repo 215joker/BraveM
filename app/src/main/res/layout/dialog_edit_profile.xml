@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Edit Profile"
+            android:textAppearance="@style/TextAppearance.BraveM.Headline"
+            android:layout_marginBottom="20dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.BraveM.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/full_name">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.BraveM.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/intake_hint">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_intake"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.BraveM.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:endIconMode="dropdown_menu"
+            android:hint="@string/select_degree">
+            <AutoCompleteTextView
+                android:id="@+id/edit_degree"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginVertical="24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_delete_account"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Delete Account"
+            android:textColor="@color/error_600"
+            app:icon="@drawable/ic_delete"
+            app:iconTint="@color/error_600" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

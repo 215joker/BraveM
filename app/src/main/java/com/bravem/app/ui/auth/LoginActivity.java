@@ -16,6 +16,7 @@ import com.bravem.app.model.User;
 import com.bravem.app.ui.admin.AdminDashboardActivity;
 import com.bravem.app.ui.dashboard.DashboardActivity;
 import com.bravem.app.utils.SessionManager;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
@@ -34,8 +35,13 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        View root = findViewById(android.R.id.content);
+        UiUtils.handleTopInset(root);
+        UiUtils.handleBottomInset(root);
 
         authRepository = new AuthRepository(this);
         sessionManager = new SessionManager(this);
@@ -52,11 +58,24 @@ public class LoginActivity extends AppCompatActivity {
         // Pre-populate university
         if (universityInput != null) {
             universityInput.setText(sessionManager.getUniversity());
+            universityInput.setOnClickListener(v -> {
+                Intent intent = new Intent(this, SelectUniversityActivity.class);
+                intent.putExtra("from_login", true);
+                startActivity(intent);
+            });
         }
 
         loginButton.setOnClickListener(v -> attemptLogin());
         registerLink.setOnClickListener(v ->
                 startActivity(new Intent(this, RegisterActivity.class)));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (universityInput != null) {
+            universityInput.setText(sessionManager.getUniversity());
+        }
     }
 
     private void attemptLogin() {

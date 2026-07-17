@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">BraveM</string>
-    <string name="app_tagline">Past Papers. Made Easy.</string>
+    <string name="app_tagline">WE DONT FAIL</string>
+    <string name="logo_est">EST. 2026</string>
+    <string name="logo_name">BRAVEM</string>
 
     <!-- Auth -->
     <string name="login">Login</string>
@@ -51,12 +53,37 @@
     <string name="uploading">Uploading…</string>
     <string name="upload_success">Paper uploaded successfully</string>
     <string name="upload_failed">Upload failed</string>
+    <string name="university">University</string>
+    <string name="intake">Intake</string>
+    <string name="add">Add</string>
+    <string name="upload">Upload</string>
+    <string name="submit_all_queued">Submit All Queued</string>
+    <string name="queued_papers_count">Queued Papers: %1$d</string>
+    <string name="bulk_upload_degree_mismatch">Bulk upload only allowed for one degree at a time.</string>
 
     <!-- Admin -->
     <string name="admin_dashboard">Admin Dashboard</string>
+    <string name="admin_welcome">Welcome back, Admin</string>
+    <string name="admin_subtitle">What would you like to manage today?</string>
+    <string name="total_students">Students</string>
+    <string name="manage_users">Manage Users</string>
+    <string name="total_degrees">Degrees</string>
+    <string name="total_universities">Universities</string>
+    <string name="total_papers">Papers</string>
+    <string name="chats">Chats</string>
+    <string name="management_section">Management</string>
+    <string name="search_logs">Search Logs</string>
+    <string name="system_section">System</string>
+    <string name="sync_db">Synchronize Local Database</string>
+    <string name="clear_temp">Clear Temporary Files</string>
     <string name="manage_degrees">Manage Degrees</string>
+    <string name="manage_universities">Manage Universities</string>
     <string name="manage_courses">Manage Courses</string>
     <string name="manage_papers">Manage Papers</string>
+    <string name="manage_admins">Manage Admins</string>
+    <string name="students">Students</string>
+    <string name="admins">Admins</string>
+    <string name="add_admin">Add Admin</string>
     <string name="add_degree">Add Degree</string>
     <string name="add_missing_degree_title">Add Missing Degree</string>
     <string name="school_or_dept">School or Department</string>
@@ -76,11 +103,31 @@
     <string name="profile">Profile</string>
     <string name="logout">Logout</string>
     <string name="my_uploads">My Uploads</string>
+
+    <!-- Community -->
+    <string name="community">Community</string>
+    <string name="chat">Chat</string>
+    <string name="search_students">Search students…</string>
+    <string name="recommendations">Recommended for you</string>
+    <string name="send_friend_request">Send Friend Request</string>
+    <string name="friend_request_sent">Friend request sent</string>
+    <string name="most_active">Most Active</string>
+    <string name="search_university_students">Search University Students</string>
+    <string name="no_students_found">No students found.</string>
+    <string name="friends">Friends</string>
+    <string name="search_results">Search Results</string>
+    <string name="accept">Accept</string>
+    <string name="friend_request_accepted">Friend request accepted</string>
+    <string name="new_friend_request">New Friend Request</string>
+    <string name="new_friend_request_desc">%1$s sent you a friend request.</string>
+    <string name="new_message">New Message from %1$s</string>
+    <string name="pinned_papers">Pinned Papers</string>
     <string name="app_settings">App Settings</string>
     <string name="app_theme">App Theme</string>
     <string name="about_app">About BraveM</string>
     <string name="contact_support">Contact Support</string>
     <string name="edit_name">Edit Name</string>
+    <string name="edit_intake">Edit Intake</string>
     <string name="intake_label">Intake: %1$s</string>
 
     <!-- Settings Dialogs -->
@@ -93,7 +140,7 @@
     <string name="contact_title">Contact Support</string>
     <string name="contact_email">Email Support</string>
     <string name="contact_call">Call Support</string>
-    <string name="contact_whatsapp">WhatsApp Support</string>
+    <string name="in_app_chat">In-App Chat Support</string>
 
     <!-- Generic -->
     <string name="loading">Loading…</string>
