@@ -46,7 +46,7 @@ public class CourseListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_course_list);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         courseRepository = new CourseRepository(this);

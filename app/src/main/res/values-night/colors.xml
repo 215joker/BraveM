@@ -1,17 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ink_900">#3D5278</color>
-    <color name="ink_700">#4E6B9E</color>
-    <color name="ink_500">#718BBF</color>
-    <color name="ink_100">#1B2A4A</color>
+    <!-- Brand palette: adjusted for Dark Mode -->
+    <color name="ink_900">#121B2E</color>
+    <color name="ink_700">#1B2A4A</color>
+    <color name="ink_500">#3D5278</color>
+    <color name="ink_100">#E7EBF2</color>
 
+    <color name="parchment_50">#121212</color>
     <color name="parchment_100">#121212</color>
     <color name="parchment_200">#1E1E1E</color>
 
-    <color name="text_primary">#F7F3EA</color>
-    <color name="text_secondary">#9A9788</color>
-    <color name="text_on_ink">#FFFFFF</color>
+    <color name="amber_600">#F5A623</color>
+    <color name="amber_700">#D98E3F</color>
+    <color name="amber_100">#33261A</color>
 
-    <color name="surface">#1E1E1E</color>
+    <color name="success_600">#4CAF50</color>
+    <color name="success_100">#1B2E1E</color>
+
+    <color name="error_600">#F44336</color>
+    <color name="error_100">#3D1B1B</color>
+
+    <color name="text_primary">#F7F3EA</color>
+    <color name="text_secondary">#BDBBB0</color>
+    <color name="text_on_ink">#F7F3EA</color>
+    <color name="text_hint">#7A7768</color>
+
     <color name="divider">#2C2C2C</color>
+    <color name="white">#1E1E1E</color>
+    <color name="surface">#1E1E1E</color>
 </resources>

@@ -17,6 +17,7 @@ import com.bravem.app.R;
 import com.bravem.app.adapter.UniversityAdapter;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.DegreeRepository;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.List;
@@ -33,8 +34,11 @@ public class ManageUniversitiesActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_degrees);
+
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
 
         degreeRepository = new DegreeRepository(this);
 

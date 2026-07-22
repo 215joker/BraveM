@@ -63,7 +63,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_select_degree);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(R.id.btn_continue));
 
         isBrowseMode = getIntent().getBooleanExtra(EXTRA_BROWSE_MODE, false);

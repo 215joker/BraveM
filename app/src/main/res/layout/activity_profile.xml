@@ -7,9 +7,11 @@
     android:background="@color/parchment_100">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/ink_900">
+        android:background="@color/ink_900"
+        app:liftOnScroll="false">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
@@ -32,16 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:orientation="vertical">
-
-                <ImageButton
-                    android:id="@+id/btn_logout"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/logout"
-                    android:src="@drawable/ic_logout"
-                    app:tint="@color/amber_600" />
+                android:orientation="horizontal">
 
                 <ImageButton
                     android:id="@+id/btn_edit_profile"
@@ -51,6 +44,16 @@
                     android:contentDescription="@string/edit"
                     android:src="@drawable/ic_edit"
                     app:tint="@color/text_on_ink" />
+
+                <ImageButton
+                    android:id="@+id/btn_logout"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/logout"
+                    android:src="@drawable/ic_logout"
+                    app:tint="@color/amber_600" />
 
             </LinearLayout>
 
@@ -130,7 +133,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textColor="@color/ink_100"
+                    android:textColor="@color/text_on_ink"
+                    android:alpha="0.9"
                     android:textSize="13sp"
                     tools:text="BSc Computer Science" />
 
@@ -139,7 +143,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textColor="@color/ink_100"
+                    android:textColor="@color/text_on_ink"
+                    android:alpha="0.9"
                     android:textSize="13sp"
                     tools:text="Intake: 3.1" />
 
@@ -182,7 +187,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
-                app:cardBackgroundColor="@color/white"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/divider"

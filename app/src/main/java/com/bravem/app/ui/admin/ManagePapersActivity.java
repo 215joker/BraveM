@@ -40,7 +40,7 @@ public class ManagePapersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_course_list); // reuses header+list shell
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         paperRepository = new PaperRepository(this);

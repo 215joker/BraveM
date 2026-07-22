@@ -2,8 +2,6 @@ package com.bravem.app.ui.community;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,8 +32,6 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
     private MessageAdapter adapter;
     private RecyclerView recyclerView;
     private EditText etMessage;
-    private Handler pollHandler = new Handler(Looper.getMainLooper());
-    private Runnable pollRunnable;
 
     private ActivityResultLauncher<String> filePickerLauncher;
 
@@ -45,7 +41,7 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         otherUser = (User) getIntent().getSerializableExtra(EXTRA_USER);
@@ -75,7 +71,22 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         findViewById(R.id.btn_attach).setOnClickListener(v -> filePickerLauncher.launch("*/*"));
 
         loadHistory();
-        startPolling();
+        startListening();
+    }
+
+    private void startListening() {
+        chatRepository.startListening(otherUser.getUid(), new DataCallback<List<ChatMessage>>() {
+            @Override
+            public void onSuccess(List<ChatMessage> messages) {
+                adapter.submitList(messages);
+                recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Silently fail or log
+            }
+        });
     }
 
     private void loadHistory() {
@@ -84,7 +95,6 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
             public void onSuccess(List<ChatMessage> messages) {
                 adapter.submitList(messages);
                 recyclerView.scrollToPosition(adapter.getItemCount() - 1);
-                chatRepository.markAsRead(otherUser.getUid());
             }
 
             @Override
@@ -101,7 +111,6 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         chatRepository.sendMessage(otherUser.getUid(), text, null, null, new DataCallback<ChatMessage>() {
             @Override
             public void onSuccess(ChatMessage message) {
-                adapter.addMessage(message);
                 etMessage.setText("");
                 recyclerView.scrollToPosition(adapter.getItemCount() - 1);
             }
@@ -120,7 +129,6 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         String label = type != null && type.contains("pdf") ? "PDF" : "Document";
         String originalName = com.bravem.app.utils.FileUtils.getFileName(this, uri);
         
-        // Copy to internal storage so other user (in this local shared DB) can access it as a file path
         String localPath = com.bravem.app.utils.FileUtils.copyFileToInternalStorage(this, uri, originalName);
         
         if (localPath == null) {
@@ -131,7 +139,6 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         chatRepository.sendMessage(otherUser.getUid(), "Shared a " + label, localPath, label, new DataCallback<ChatMessage>() {
             @Override
             public void onSuccess(ChatMessage message) {
-                adapter.addMessage(message);
                 recyclerView.scrollToPosition(adapter.getItemCount() - 1);
             }
 
@@ -142,24 +149,12 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         });
     }
 
-    private void startPolling() {
-        pollRunnable = new Runnable() {
-            @Override
-            public void run() {
-                loadHistory();
-                pollHandler.postDelayed(this, 3000); // Poll every 3 seconds
-            }
-        };
-        pollHandler.postDelayed(pollRunnable, 3000);
-    }
-
     @Override
     public void onAttachmentClick(ChatMessage message) {
         if (message.getAttachmentPath() != null) {
             String path = message.getAttachmentPath();
             String fileName = path.substring(path.lastIndexOf("/") + 1);
             
-            // If it's the UUID-prefixed name, it already has the extension
             long downloadId = com.bravem.app.utils.FileUtils.downloadFile(this, path, fileName);
             if (downloadId != -1) {
                 Toast.makeText(this, "Downloading " + fileName + "...", Toast.LENGTH_SHORT).show();
@@ -172,6 +167,5 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        pollHandler.removeCallbacks(pollRunnable);
     }
 }

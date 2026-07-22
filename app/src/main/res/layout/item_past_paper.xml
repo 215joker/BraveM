@@ -59,7 +59,7 @@
             android:fontFamily="sans-serif-medium"
             android:paddingHorizontal="8dp"
             android:paddingVertical="3dp"
-            android:textColor="@color/ink_900"
+            android:textColor="@color/text_primary"
             android:textSize="11sp"
             tools:text="PDF" />
 

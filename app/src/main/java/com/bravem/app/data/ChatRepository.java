@@ -14,6 +14,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 public class ChatRepository {
 
     private final Context context;
@@ -22,6 +28,7 @@ public class ChatRepository {
     private final com.bravem.app.data.local.FriendshipDao friendshipDao;
     private final NotificationRepository notificationRepository;
     private final SessionManager sessionManager;
+    private final DatabaseReference messagesRef;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -33,6 +40,38 @@ public class ChatRepository {
         friendshipDao = db.friendshipDao();
         notificationRepository = new NotificationRepository(context);
         sessionManager = new SessionManager(context);
+        messagesRef = FirebaseDatabase.getInstance().getReference("messages");
+    }
+
+    public void startListening(String otherUserId, DataCallback<List<ChatMessage>> callback) {
+        String currentUserId = sessionManager.getUid();
+        String chatId = getChatId(currentUserId, otherUserId);
+        
+        messagesRef.child(chatId).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                executor.execute(() -> {
+                    for (DataSnapshot msgSnapshot : snapshot.getChildren()) {
+                        ChatMessage msg = msgSnapshot.getValue(ChatMessage.class);
+                        if (msg != null) {
+                            chatMessageDao.insert(msg);
+                        }
+                    }
+                    List<ChatMessage> history = chatMessageDao.getChatHistory(currentUserId, otherUserId);
+                    chatMessageDao.markAsRead(otherUserId, currentUserId);
+                    mainHandler.post(() -> callback.onSuccess(history));
+                });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                mainHandler.post(() -> callback.onError(error.toException()));
+            }
+        });
+    }
+
+    private String getChatId(String u1, String u2) {
+        return u1.compareTo(u2) < 0 ? u1 + "_" + u2 : u2 + "_" + u1;
     }
 
     public void getChatHistory(String otherUserId, DataCallback<List<ChatMessage>> callback) {
@@ -40,15 +79,6 @@ public class ChatRepository {
         executor.execute(() -> {
             try {
                 List<ChatMessage> history = chatMessageDao.getChatHistory(currentUserId, otherUserId);
-                chatMessageDao.markAsRead(otherUserId, currentUserId);
-                
-                // Update interaction time
-                com.bravem.app.model.Friendship friendship = friendshipDao.getFriendship(currentUserId, otherUserId);
-                if (friendship != null) {
-                    friendship.setUpdatedAt(System.currentTimeMillis());
-                    friendshipDao.update(friendship);
-                }
-
                 mainHandler.post(() -> callback.onSuccess(history));
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));
@@ -61,45 +91,38 @@ public class ChatRepository {
         String senderName = sessionManager.getFullName();
         executor.execute(() -> {
             try {
+                String messageId = messagesRef.push().getKey();
                 ChatMessage chatMessage = new ChatMessage(senderId, receiverId, message, System.currentTimeMillis());
+                chatMessage.setId(messageId);
                 chatMessage.setAttachmentPath(attachmentPath);
                 chatMessage.setAttachmentType(attachmentType);
-                chatMessageDao.insert(chatMessage);
+                
+                String chatId = getChatId(senderId, receiverId);
+                messagesRef.child(chatId).child(messageId).setValue(chatMessage).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        executor.execute(() -> {
+                            chatMessageDao.insert(chatMessage);
+                            // Update friendship updatedAt for sorting
+                            com.bravem.app.model.Friendship friendship = friendshipDao.getFriendship(senderId, receiverId);
+                            if (friendship != null) {
+                                friendship.setUpdatedAt(System.currentTimeMillis());
+                                friendshipDao.update(friendship);
+                            }
 
-                // Update friendship updatedAt for sorting
-                com.bravem.app.model.Friendship friendship = friendshipDao.getFriendship(senderId, receiverId);
-                if (friendship != null) {
-                    friendship.setUpdatedAt(System.currentTimeMillis());
-                    friendshipDao.update(friendship);
-                }
-
-                // Simulate message notification for receiver
-                notificationRepository.addNotification(
-                        "New Message from " + senderName,
-                        message != null ? message : "Sent an attachment",
-                        "chat_message",
-                        receiverId,
-                        senderId // relatedId is senderId
-                );
-
-                // Show system notification (simulating for receiver)
-                executor.execute(() -> {
-                    com.bravem.app.model.User sender = userDao.getByUid(senderId);
-                    if (sender != null) {
-                        mainHandler.post(() -> {
-                            android.content.Intent intent = new android.content.Intent(context, com.bravem.app.ui.community.ChatActivity.class);
-                            intent.putExtra(com.bravem.app.ui.community.ChatActivity.EXTRA_USER, sender);
-                            com.bravem.app.utils.NotificationHelper.showNotification(
-                                    context,
+                            // Notification for receiver
+                            notificationRepository.addNotification(
                                     "New Message from " + senderName,
                                     message != null ? message : "Sent an attachment",
-                                    intent
+                                    "chat_message",
+                                    receiverId,
+                                    senderId
                             );
+                            mainHandler.post(() -> callback.onSuccess(chatMessage));
                         });
+                    } else {
+                        mainHandler.post(() -> callback.onError(task.getException()));
                     }
                 });
-
-                mainHandler.post(() -> callback.onSuccess(chatMessage));
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));
             }

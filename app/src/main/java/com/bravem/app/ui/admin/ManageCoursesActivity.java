@@ -20,6 +20,7 @@ import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.DegreeRepository;
 import com.bravem.app.model.Course;
 import com.bravem.app.model.Degree;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
@@ -44,8 +45,12 @@ public class ManageCoursesActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_courses);
+
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
+        UiUtils.handleFabBottomInset(findViewById(R.id.fab_add), 24);
 
         degreeRepository = new DegreeRepository(this);
         courseRepository = new CourseRepository(this);

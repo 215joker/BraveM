@@ -1,5 +1,6 @@
 package com.bravem.app.model;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -7,8 +8,9 @@ import java.io.Serializable;
 
 @Entity(tableName = "chat_messages")
 public class ChatMessage implements Serializable {
-    @PrimaryKey(autoGenerate = true)
-    private int id;
+    @PrimaryKey
+    @NonNull
+    private String id;
     private String senderId;
     private String receiverId;
     private String message;
@@ -17,7 +19,10 @@ public class ChatMessage implements Serializable {
     private String attachmentPath;
     private String attachmentType; // e.g., "PDF", "IMAGE"
 
+    public ChatMessage() {}
+
     public ChatMessage(String senderId, String receiverId, String message, long timestamp) {
+        this.id = java.util.UUID.randomUUID().toString();
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.message = message;
@@ -25,8 +30,9 @@ public class ChatMessage implements Serializable {
         this.isRead = false;
     }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    @NonNull
+    public String getId() { return id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
     public String getSenderId() { return senderId; }
     public void setSenderId(String senderId) { this.senderId = senderId; }

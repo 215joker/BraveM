@@ -46,7 +46,7 @@ public class SearchActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         paperRepository = new PaperRepository(this);

@@ -7,23 +7,23 @@
 
     <!-- EST. 2026 (Top) -->
     <group android:translateX="34" android:translateY="20">
-        <path android:fillColor="@color/text_secondary" android:pathData="M0,0h2v4h-2z M4,0h2v4h-2z M8,0h2v4h-2z M12,0h1v4h-1z M15,0h2v4h-2z M19,0h2v4h-2z M23,0h2v4h-2z M27,0h2v4h-2z" />
+        <path android:fillColor="@color/logo_dark" android:pathData="M0,0h2v4h-2z M4,0h2v4h-2z M8,0h2v4h-2z M12,0h1v4h-1z M15,0h2v4h-2z M19,0h2v4h-2z M23,0h2v4h-2z M27,0h2v4h-2z" />
     </group>
 
     <!-- BRAVEM (Middle) -->
     <group android:translateX="14" android:translateY="35">
-        <path android:fillColor="@color/logo_red" android:pathData="M0,0h10c3,0 5,2 5,4c0,2 -2,4 -5,4c3,1 5,3 5,5c0,3 -2,5 -5,5h-10v-18z M4,4v4h6c1,0 2,-1 2,-2c0,-1 -1,-2 -2,-2h-6z M4,10v5h6c1,0 2,-1 2,-2c0,-1 -1,-2 -2,-2h-6z" />
-        <path android:fillColor="@color/logo_red" android:pathData="M18,0h8c3,0 5,2 5,4c0,2 -2,4 -4,4l4,10h-5l-3,-9h-1v9h-4v-18z M22,4v5h3c1,0 2,-1 2,-2.5c0,-1.5 -1,-2.5 -2,-2.5h-3z" />
-        <path android:fillColor="@color/logo_red" android:pathData="M35,18l6,-18l6,18h-4l-1,-3h-3l-1,3z M38.5,10h3l-1.5,-4z" />
-        <path android:fillColor="@color/logo_red" android:pathData="M50,0l5,18l5,-18h4l-7,18h-4l-7,-18z" />
-        <path android:fillColor="@color/logo_red" android:pathData="M68,0h10v4h-6v3h5v4h-5v3h6v4h-10z" />
-        <path android:fillColor="@color/logo_red" android:pathData="M81,18v-18l5,10l5,-10v18h-3v-10l-2,4l-2,-4v10z" />
+        <path android:fillColor="@color/amber_600" android:pathData="M0,0h10c3,0 5,2 5,4c0,2 -2,4 -5,4c3,1 5,3 5,5c0,3 -2,5 -5,5h-10v-18z M4,4v4h6c1,0 2,-1 2,-2c0,-1 -1,-2 -2,-2h-6z M4,10v5h6c1,0 2,-1 2,-2c0,-1 -1,-2 -2,-2h-6z" />
+        <path android:fillColor="@color/amber_600" android:pathData="M18,0h8c3,0 5,2 5,4c0,2 -2,4 -4,4l4,10h-5l-3,-9h-1v9h-4v-18z M22,4v5h3c1,0 2,-1 2,-2.5c0,-1.5 -1,-2.5 -2,-2.5h-3z" />
+        <path android:fillColor="@color/amber_600" android:pathData="M35,18l6,-18l6,18h-4l-1,-3h-3l-1,3z M38.5,10h3l-1.5,-4z" />
+        <path android:fillColor="@color/amber_600" android:pathData="M50,0l5,18l5,-18h4l-7,18h-4l-7,-18z" />
+        <path android:fillColor="@color/amber_600" android:pathData="M68,0h10v4h-6v3h5v4h-5v3h6v4h-10z" />
+        <path android:fillColor="@color/amber_600" android:pathData="M81,18v-18l5,10l5,-10v18h-3v-10l-2,4l-2,-4v10z" />
     </group>
 
     <!-- WE DONT FAIL (Bottom Curve) -->
     <path
         android:pathData="M30,65 Q54,85 78,65"
-        android:strokeColor="@color/text_secondary"
+        android:strokeColor="@color/logo_dark"
         android:strokeWidth="2.5"
         android:strokeLineCap="round" />
 

@@ -79,6 +79,16 @@ public class RegisterActivity extends AppCompatActivity {
         loginLink.setOnClickListener(v -> {
             startActivity(new Intent(this, LoginActivity.class));
         });
+
+        findViewById(R.id.btn_google).setOnClickListener(v -> handleSocialLogin("Google"));
+        findViewById(R.id.btn_facebook).setOnClickListener(v -> handleSocialLogin("Facebook"));
+        findViewById(R.id.btn_instagram).setOnClickListener(v -> handleSocialLogin("Instagram"));
+        findViewById(R.id.btn_github).setOnClickListener(v -> handleSocialLogin("GitHub"));
+    }
+
+    private void handleSocialLogin(String provider) {
+        Toast.makeText(this, provider + " registration coming soon. Configure API keys first.", Toast.LENGTH_SHORT).show();
+        // TODO: Implement Social Login with Firebase
     }
 
     @Override

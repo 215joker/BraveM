@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.bravem.app.R;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
+import com.bravem.app.utils.UiUtils;
 import com.github.barteksc.pdfviewer.PDFView;
 import com.google.android.material.button.MaterialButton;
 
@@ -37,15 +38,12 @@ public class PaperViewerActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        EdgeToEdge.enable(this);
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_paper_viewer);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(0, systemBars.top, 0, systemBars.bottom);
-            return insets;
-        });
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
+        UiUtils.handleBottomInset(findViewById(R.id.btn_download));
 
         pdfView = findViewById(R.id.pdf_view);
         docxPlaceholder = findViewById(R.id.layout_docx_placeholder);

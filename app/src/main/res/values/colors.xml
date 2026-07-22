@@ -34,4 +34,10 @@
     <!-- Logo Colors -->
     <color name="logo_red">#EB3333</color>
     <color name="logo_dark">#121212</color>
+
+    <!-- Social Media Colors -->
+    <color name="google_red">#EA4335</color>
+    <color name="facebook_blue">#1877F2</color>
+    <color name="instagram_pink">#E4405F</color>
+    <color name="github_black">#181717</color>
 </resources>

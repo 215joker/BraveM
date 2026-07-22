@@ -91,7 +91,7 @@ public class UploadPaperActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_upload_paper);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(R.id.btn_submit_all));
 
         degreeRepository = new DegreeRepository(this);

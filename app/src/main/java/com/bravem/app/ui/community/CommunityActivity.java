@@ -17,6 +17,7 @@ import com.bravem.app.adapter.StudentAdapter;
 import com.bravem.app.data.CommunityRepository;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.model.User;
+import com.bravem.app.utils.UiUtils;
 
 import java.util.List;
 
@@ -33,11 +34,13 @@ public class CommunityActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_community);
 
         repository = new CommunityRepository(this);
 
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
         etSearch = findViewById(R.id.et_search);

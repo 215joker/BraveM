@@ -64,7 +64,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        UiUtils.handleTopInset(findViewById(R.id.toolbar));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         imagePickerLauncher = registerForActivityResult(

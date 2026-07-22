@@ -68,6 +68,45 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(v -> attemptLogin());
         registerLink.setOnClickListener(v ->
                 startActivity(new Intent(this, RegisterActivity.class)));
+
+        findViewById(R.id.btn_forgot_password).setOnClickListener(v -> handleForgotPassword());
+
+        findViewById(R.id.btn_google).setOnClickListener(v -> handleSocialLogin("Google"));
+        findViewById(R.id.btn_facebook).setOnClickListener(v -> handleSocialLogin("Facebook"));
+        findViewById(R.id.btn_instagram).setOnClickListener(v -> handleSocialLogin("Instagram"));
+        findViewById(R.id.btn_github).setOnClickListener(v -> handleSocialLogin("GitHub"));
+    }
+
+    private void handleForgotPassword() {
+        String email = emailInput.getText() != null ? emailInput.getText().toString().trim() : "";
+        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailLayout.setError(getString(R.string.error_invalid_email));
+            return;
+        }
+
+        setLoading(true);
+        authRepository.forgotPassword(email, new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                setLoading(false);
+                Toast.makeText(LoginActivity.this, 
+                        getString(R.string.password_reset_sent, email), 
+                        Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                setLoading(false);
+                Toast.makeText(LoginActivity.this, 
+                        e.getMessage() != null ? e.getMessage() : getString(R.string.error_generic), 
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void handleSocialLogin(String provider) {
+        Toast.makeText(this, provider + " login coming soon. Configure API keys first.", Toast.LENGTH_SHORT).show();
+        // TODO: Implement Social Login with Firebase
     }
 
     @Override

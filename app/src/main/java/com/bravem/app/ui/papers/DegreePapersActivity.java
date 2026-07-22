@@ -20,6 +20,7 @@ import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.PaperRepository;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.ArrayList;
@@ -54,10 +55,14 @@ public class DegreePapersActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_degree_papers);
 
         paperRepository = new PaperRepository(this);
+
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
+        UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         recyclerView = findViewById(R.id.recycler_papers);
         titleView = findViewById(R.id.text_title);

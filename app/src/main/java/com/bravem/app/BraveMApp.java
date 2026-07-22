@@ -7,6 +7,8 @@ import android.os.Build;
 
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.bravem.app.data.sync.SyncManager;
 import com.bravem.app.utils.SessionManager;
 
@@ -20,6 +22,14 @@ public class BraveMApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this);
+        
+        // Disable Crashlytics in debug mode to prevent the "Build ID missing" crash
+        // This allows the app to run during development even if the plugin task fails
+        boolean isDebug = (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!isDebug);
         
         // Apply saved theme preference (defaults to Light/White)
         SessionManager sessionManager = new SessionManager(this);

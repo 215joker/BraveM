@@ -11,8 +11,14 @@ import com.bravem.app.model.PastPaper;
 import com.bravem.app.model.User;
 import com.bravem.app.utils.NotificationHelper;
 import com.bravem.app.utils.SessionManager;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class SyncWorker extends Worker {
 
@@ -27,38 +33,42 @@ public class SyncWorker extends Worker {
         AppDatabase db = AppDatabase.getInstance(context);
         UserDao userDao = db.userDao();
         PaperDao paperDao = db.paperDao();
-        SessionManager sessionManager = new SessionManager(context);
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference();
 
         try {
-            // 1. Sync Users to remote
+            // 1. Sync Users to Realtime Database
             List<User> unsyncedUsers = userDao.getUnsynced();
-            for (User user : unsyncedUsers) {
-                // simulate success:
-                user.setSynced(true);
-                userDao.update(user);
+            if (!unsyncedUsers.isEmpty()) {
+                Map<String, Object> childUpdates = new HashMap<>();
+                for (User user : unsyncedUsers) {
+                    childUpdates.put("/users/" + user.getUid(), user);
+                }
+                Tasks.await(database.updateChildren(childUpdates));
+                for (User user : unsyncedUsers) {
+                    user.setSynced(true);
+                    userDao.update(user);
+                }
             }
 
-            // 2. Sync Papers to remote
+            // 2. Sync Papers to Realtime Database
             List<PastPaper> unsyncedPapers = paperDao.getUnsynced();
-            for (PastPaper paper : unsyncedPapers) {
-                // simulate success:
-                paper.setSynced(true);
-                paperDao.update(paper);
+            if (!unsyncedPapers.isEmpty()) {
+                Map<String, Object> childUpdates = new HashMap<>();
+                for (PastPaper paper : unsyncedPapers) {
+                    childUpdates.put("/papers/" + paper.getId(), paper);
+                }
+                Tasks.await(database.updateChildren(childUpdates));
+                for (PastPaper paper : unsyncedPapers) {
+                    paper.setSynced(true);
+                    paperDao.update(paper);
+                }
             }
-
-            // 3. Simulate fetching new papers from server
-            // In a real app, we'd check for papers matching the user's degree/intake
-            // and show a notification if there are any NEW ones.
-            // String degreeId = sessionManager.getDegreeId();
-            // List<PastPaper> newPapers = api.fetchNewPapers(degreeId, sessionManager.getLastChecked());
-            // if (!newPapers.isEmpty()) {
-            //     NotificationHelper.showNotification(context, "New Papers Available", 
-            //         "New papers have been uploaded for your degree.");
-            // }
 
             return Result.success();
-        } catch (Exception e) {
+        } catch (ExecutionException | InterruptedException e) {
             return Result.retry();
+        } catch (Exception e) {
+            return Result.failure();
         }
     }
 }

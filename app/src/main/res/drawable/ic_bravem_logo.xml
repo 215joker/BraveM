@@ -12,7 +12,7 @@
 
     <!-- BRAVEM -->
     <path
-        android:fillColor="@color/logo_red"
+        android:fillColor="@color/ink_500"
         android:pathData="M30,80 L170,80 L170,120 L30,120 Z" /> <!-- Placeholder for BRAVEM -->
 
     <!-- Slogan (Curved) -->

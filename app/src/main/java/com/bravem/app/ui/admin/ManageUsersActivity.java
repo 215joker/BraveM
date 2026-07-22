@@ -52,7 +52,7 @@ public class ManageUsersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_users);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleFabBottomInset(findViewById(R.id.fab_add_admin), 24);
 
         authRepository = new AuthRepository(this);

@@ -48,6 +48,24 @@ public class SplashActivity extends AppCompatActivity {
     private void route() {
         SessionManager session = new SessionManager(this);
 
+        // Firebase Test Lab Automation: Auto-login for Robo crawler if flag present
+        if (getIntent().getBooleanExtra("FIREBASE_TEST_LAB", false)) {
+            authRepository.login("test@bravem.com", "password123", new DataCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    session.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
+                            user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
+                    routeBasedOnSession(session);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    goToLogin();
+                }
+            });
+            return;
+        }
+
         if (!authRepository.isLoggedIn()) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();

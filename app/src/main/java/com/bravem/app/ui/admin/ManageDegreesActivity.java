@@ -42,7 +42,7 @@ public class ManageDegreesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_degrees);
 
-        UiUtils.handleTopInset(findViewById(R.id.layout_header));
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleFabBottomInset(findViewById(R.id.fab_add), 24);
 
         degreeRepository = new DegreeRepository(this);

@@ -8,6 +8,10 @@ import com.bravem.app.data.local.AppDatabase;
 import com.bravem.app.data.local.UserDao;
 import com.bravem.app.model.User;
 import com.bravem.app.utils.SessionManager;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -15,29 +19,33 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Replaces Firebase Authentication and Firestore /users with local Room storage.
+ * Repository handling Authentication using Firebase Auth and syncing with Local Room + Realtime DB.
  */
 public class AuthRepository {
 
     private final UserDao userDao;
     private final SessionManager sessionManager;
+    private final FirebaseAuth firebaseAuth;
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
     private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 
     public AuthRepository(Context context) {
         this.userDao = AppDatabase.getInstance(context).userDao();
         this.sessionManager = new SessionManager(context);
+        this.firebaseAuth = FirebaseAuth.getInstance();
     }
 
     public boolean isLoggedIn() {
-        return sessionManager.getUid() != null;
+        return firebaseAuth.getCurrentUser() != null;
     }
 
     public String getCurrentUid() {
-        return sessionManager.getUid();
+        FirebaseUser user = firebaseAuth.getCurrentUser();
+        return user != null ? user.getUid() : sessionManager.getUid();
     }
 
     public void logout() {
+        firebaseAuth.signOut();
         sessionManager.clear();
     }
 
@@ -51,31 +59,113 @@ public class AuthRepository {
     public void register(String fullName, String email, String password, 
                          String degreeId, String degreeName, String intake, 
                          DataCallback<User> callback) {
-        executor.execute(() -> {
-            User existingUser = userDao.getByEmail(email);
-            if (existingUser != null) {
-                mainHandler.post(() -> callback.onError(new Exception("User already exists")));
-                return;
-            }
+        firebaseAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().getUser() != null) {
+                        String uid = task.getResult().getUser().getUid();
+                        executor.execute(() -> {
+                            // First user logic or admin check based on email
+                            String role = (email.contains("admin")) ? User.ROLE_ADMIN : User.ROLE_STUDENT;
+                            String university = sessionManager.getUniversity();
+                            
+                            User newUser = new User(uid, fullName, email, password, university, degreeId, degreeName, intake, role, System.currentTimeMillis());
+                            
+                            // 1. Save to Local Room
+                            userDao.insert(newUser);
+                            
+                            // 2. Push to Firebase Realtime Database
+                            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(uid);
+                            userRef.setValue(newUser).addOnCompleteListener(dbTask -> {
+                                if (dbTask.isSuccessful()) {
+                                    newUser.setSynced(true);
+                                    executor.execute(() -> userDao.update(newUser));
+                                }
+                            });
 
-            String uid = UUID.randomUUID().toString();
-            // First user is admin for easier local testing
-            String role = (userDao.getByUid("admin") == null && email.contains("admin"))
-                    ? User.ROLE_ADMIN : User.ROLE_STUDENT;
-
-            String university = sessionManager.getUniversity();
-            User newUser = new User(uid, fullName, email, password, university, degreeId, degreeName, intake, role, System.currentTimeMillis());
-            userDao.insert(newUser);
-            
-            // Save session immediately after registration
-            sessionManager.saveSession(uid, email, fullName, role, university, degreeId, degreeName, intake);
-            
-            mainHandler.post(() -> callback.onSuccess(newUser));
-        });
+                            // Save session
+                            sessionManager.saveSession(uid, email, fullName, role, university, degreeId, degreeName, intake);
+                            mainHandler.post(() -> callback.onSuccess(newUser));
+                        });
+                    } else {
+                        callback.onError(task.getException());
+                    }
+                });
     }
 
     public void register(String fullName, String email, String password, DataCallback<User> callback) {
         register(fullName, email, password, null, null, null, callback);
+    }
+
+    public void login(String email, String password, DataCallback<User> callback) {
+        firebaseAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().getUser() != null) {
+                        String uid = task.getResult().getUser().getUid();
+                        
+                        fetchUserProfile(uid, new DataCallback<User>() {
+                            @Override
+                            public void onSuccess(User user) {
+                                if (user.isSuspended()) {
+                                    if (System.currentTimeMillis() > user.getSuspendedUntil()) {
+                                        user.setSuspended(false);
+                                        user.setSuspendedUntil(0);
+                                        executor.execute(() -> userDao.update(user));
+                                    } else {
+                                        firebaseAuth.signOut();
+                                        callback.onError(new Exception("Account suspended until " + new java.util.Date(user.getSuspendedUntil())));
+                                        return;
+                                    }
+                                }
+                                if (user.isDeletionRequested()) {
+                                    firebaseAuth.signOut();
+                                    callback.onError(new Exception("Account is marked for deletion."));
+                                    return;
+                                }
+                                sessionManager.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
+                                        user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
+                                callback.onSuccess(user);
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                // If not found locally, try fetching from Realtime Database
+                                fetchFromRealtimeDB(uid, callback);
+                            }
+                        });
+                    } else {
+                        callback.onError(task.getException());
+                    }
+                });
+    }
+
+    public void forgotPassword(String email, DataCallback<Void> callback) {
+        firebaseAuth.sendPasswordResetEmail(email)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        callback.onSuccess(null);
+                    } else {
+                        callback.onError(task.getException());
+                    }
+                });
+    }
+
+    private void fetchFromRealtimeDB(String uid, DataCallback<User> callback) {
+        FirebaseDatabase.getInstance().getReference("users").child(uid).get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().exists()) {
+                        User user = task.getResult().getValue(User.class);
+                        if (user != null) {
+                            executor.execute(() -> userDao.insert(user));
+                            sessionManager.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
+                                    user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
+                            callback.onSuccess(user);
+                        } else {
+                            callback.onError(new Exception("User data corrupted"));
+                        }
+                    } else {
+                        callback.onError(new Exception("User profile not found in cloud"));
+                    }
+                });
     }
 
     public void deleteUserPermanently(User user, DataCallback<Void> callback) {
@@ -111,33 +201,6 @@ public class AuthRepository {
             user.setSuspendedUntil(0);
             userDao.update(user);
             mainHandler.post(() -> callback.onSuccess(null));
-        });
-    }
-
-    public void login(String email, String password, DataCallback<User> callback) {
-        executor.execute(() -> {
-            User user = userDao.getByEmail(email);
-            if (user != null && Objects.equals(user.getPassword(), password)) {
-                if (user.isSuspended()) {
-                    if (System.currentTimeMillis() > user.getSuspendedUntil()) {
-                        user.setSuspended(false);
-                        user.setSuspendedUntil(0);
-                        userDao.update(user);
-                    } else {
-                        mainHandler.post(() -> callback.onError(new Exception("Account suspended until " + new java.util.Date(user.getSuspendedUntil()))));
-                        return;
-                    }
-                }
-                if (user.isDeletionRequested()) {
-                    mainHandler.post(() -> callback.onError(new Exception("Account is marked for deletion.")));
-                    return;
-                }
-                sessionManager.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
-                        user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
-                mainHandler.post(() -> callback.onSuccess(user));
-            } else {
-                mainHandler.post(() -> callback.onError(new Exception("Invalid credentials")));
-            }
         });
     }
 

@@ -36,7 +36,7 @@ public class NotificationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_notifications);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
-        UiUtils.handleTopInset(toolbar);
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 

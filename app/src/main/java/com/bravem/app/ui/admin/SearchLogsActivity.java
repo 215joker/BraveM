@@ -14,6 +14,7 @@ import com.bravem.app.adapter.LogAdapter;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.LogRepository;
 import com.bravem.app.model.SearchLog;
+import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.List;
@@ -29,8 +30,11 @@ public class SearchLogsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_logs);
+
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
 
         logRepository = new LogRepository(this);
 
