@@ -25,6 +25,9 @@ public interface DegreeDao {
     @Query("SELECT DISTINCT university FROM degrees WHERE university IS NOT NULL AND university != '' ORDER BY university ASC")
     List<String> getUniqueUniversities();
 
+    @Query("SELECT * FROM degrees WHERE isSynced = 0")
+    List<Degree> getUnsynced();
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(Degree degree);
 

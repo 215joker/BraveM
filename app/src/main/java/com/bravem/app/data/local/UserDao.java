@@ -37,6 +37,6 @@ public interface UserDao {
     @Query("SELECT * FROM users WHERE (university LIKE '%' || :query || '%' OR fullName LIKE '%' || :query || '%') AND role = 'student' AND uid != :currentUserId")
     java.util.List<User> searchStudents(String query, String currentUserId);
 
-    @Query("SELECT * FROM users WHERE university = :university AND degreeId = :degreeId AND role = 'student' AND uid != :currentUserId ORDER BY intake DESC")
-    java.util.List<User> getRecommendations(String university, String degreeId, String currentUserId);
+    @Query("SELECT * FROM users WHERE university = :university AND role = 'student' AND uid != :currentUserId ORDER BY fullName ASC")
+    java.util.List<User> getRecommendations(String university, String currentUserId);
 }

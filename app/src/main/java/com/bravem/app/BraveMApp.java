@@ -23,8 +23,13 @@ public class BraveMApp extends Application {
     public void onCreate() {
         super.onCreate();
 
-        // Initialize Firebase
-        FirebaseApp.initializeApp(this);
+        // Initialize Firebase - Removal of manual initializeApp as it is handled by google-services plugin
+        // and can cause bucket initialization issues if called manually without options.
+        try {
+            com.google.firebase.database.FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        } catch (Exception e) {
+            // Already initialized persistence or other error
+        }
         
         // Disable Crashlytics in debug mode to prevent the "Build ID missing" crash
         // This allows the app to run during development even if the plugin task fails

@@ -166,6 +166,9 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
 
     @Override
     protected void onDestroy() {
+        if (chatRepository != null) {
+            chatRepository.stopListening();
+        }
         super.onDestroy();
     }
 }

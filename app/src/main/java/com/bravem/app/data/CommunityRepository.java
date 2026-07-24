@@ -65,16 +65,15 @@ public class CommunityRepository {
     }
 
     public void getRecommendations(DataCallback<List<User>> callback) {
-        syncUsersFromFirebase(new DataCallback<Void>() {
+        syncUsersByUniversity(sessionManager.getUniversity(), new DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 String university = sessionManager.getUniversity();
-                String degreeId = sessionManager.getDegreeId();
                 String currentUserId = sessionManager.getUid();
 
                 executor.execute(() -> {
                     try {
-                        List<User> users = userDao.getRecommendations(university, degreeId, currentUserId);
+                        List<User> users = userDao.getRecommendations(university, currentUserId);
                         mainHandler.post(() -> callback.onSuccess(users));
                     } catch (Exception e) {
                         mainHandler.post(() -> callback.onError(e));
@@ -90,7 +89,7 @@ public class CommunityRepository {
     }
 
     public void searchStudents(String query, DataCallback<List<User>> callback) {
-        syncUsersFromFirebase(new DataCallback<Void>() {
+        syncUsersByUniversity(sessionManager.getUniversity(), new DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 String currentUserId = sessionManager.getUid();
@@ -113,20 +112,23 @@ public class CommunityRepository {
 
     public void sendFriendRequest(String targetUserId, DataCallback<Boolean> callback) {
         String currentUserId = sessionManager.getUid();
+        if (currentUserId == null || targetUserId == null || currentUserId.equals(targetUserId)) {
+            callback.onSuccess(false);
+            return;
+        }
         String currentUserName = sessionManager.getFullName();
-        executor.execute(() -> {
-            try {
-                Friendship existing = friendshipDao.getFriendship(currentUserId, targetUserId);
-                if (existing == null) {
+        String friendshipId = Friendship.generateId(currentUserId, targetUserId);
+
+        // Check Firebase directly to avoid duplicate requests if local sync is delayed
+        friendshipsRef.child(friendshipId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                if (!snapshot.exists()) {
                     Friendship friendship = new Friendship(currentUserId, targetUserId, Friendship.STATUS_PENDING, System.currentTimeMillis());
-                    
-                    // Save to Firebase
-                    String friendshipId = getFriendshipId(currentUserId, targetUserId);
                     friendshipsRef.child(friendshipId).setValue(friendship).addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
                             executor.execute(() -> {
                                 friendshipDao.insert(friendship);
-                                // Notification for receiver
                                 notificationRepository.addNotification(
                                         "New Friend Request",
                                         currentUserName + " sent you a friend request.",
@@ -141,10 +143,22 @@ public class CommunityRepository {
                         }
                     });
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(false));
+                    // Check if it's already accepted or pending from other side
+                    Friendship existing = snapshot.getValue(Friendship.class);
+                    if (existing != null && Friendship.STATUS_PENDING.equals(existing.getStatus()) 
+                            && existing.getReceiverId().equals(currentUserId)) {
+                        // If they sent us a request, just accept it? 
+                        // For now, just return false as per current logic
+                        mainHandler.post(() -> callback.onSuccess(false));
+                    } else {
+                        mainHandler.post(() -> callback.onSuccess(false));
+                    }
                 }
-            } catch (Exception e) {
-                mainHandler.post(() -> callback.onError(e));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                mainHandler.post(() -> callback.onError(error.toException()));
             }
         });
     }
@@ -152,48 +166,78 @@ public class CommunityRepository {
     public void acceptFriendRequest(String senderId, DataCallback<Boolean> callback) {
         String currentUserId = sessionManager.getUid();
         String currentUserName = sessionManager.getFullName();
-        executor.execute(() -> {
-            try {
-                Friendship friendship = friendshipDao.getFriendship(senderId, currentUserId);
-                if (friendship != null && friendship.getStatus().equals(Friendship.STATUS_PENDING)) {
-                    friendship.setStatus(Friendship.STATUS_ACCEPTED);
-                    friendship.setUpdatedAt(System.currentTimeMillis());
+        String friendshipId = Friendship.generateId(senderId, currentUserId);
 
-                    // Update in Firebase
-                    String friendshipId = getFriendshipId(senderId, currentUserId);
-                    friendshipsRef.child(friendshipId).setValue(friendship).addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            executor.execute(() -> {
-                                friendshipDao.update(friendship);
-                                // Notification for sender
-                                notificationRepository.addNotification(
-                                        "Friend Request Accepted",
-                                        currentUserName + " accepted your friend request.",
-                                        "friend_accepted",
-                                        senderId,
-                                        currentUserId
-                                );
-                                mainHandler.post(() -> callback.onSuccess(true));
-                            });
-                        } else {
-                            mainHandler.post(() -> callback.onError(task.getException()));
-                        }
-                    });
+        friendshipsRef.child(friendshipId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                Friendship friendship = snapshot.getValue(Friendship.class);
+                if (friendship != null && Friendship.STATUS_PENDING.equals(friendship.getStatus())) {
+                    if (friendship.getReceiverId().equals(currentUserId)) {
+                        friendship.setStatus(Friendship.STATUS_ACCEPTED);
+                        friendship.setUpdatedAt(System.currentTimeMillis());
+
+                        friendshipsRef.child(friendshipId).setValue(friendship).addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                executor.execute(() -> {
+                                    friendshipDao.insert(friendship);
+                                    notificationRepository.addNotification(
+                                            "Friend Request Accepted",
+                                            currentUserName + " accepted your friend request.",
+                                            "friend_accepted",
+                                            senderId,
+                                            currentUserId
+                                    );
+                                    mainHandler.post(() -> callback.onSuccess(true));
+                                });
+                            } else {
+                                mainHandler.post(() -> callback.onError(task.getException()));
+                            }
+                        });
+                    } else {
+                        mainHandler.post(() -> callback.onSuccess(false));
+                    }
                 } else {
                     mainHandler.post(() -> callback.onSuccess(false));
                 }
-            } catch (Exception e) {
-                mainHandler.post(() -> callback.onError(e));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                mainHandler.post(() -> callback.onError(error.toException()));
             }
         });
     }
 
-    private String getFriendshipId(String u1, String u2) {
-        return u1.compareTo(u2) < 0 ? u1 + "_" + u2 : u2 + "_" + u1;
+    private void syncSingleUser(String uid, Runnable onComplete) {
+        usersRef.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                User user = snapshot.getValue(User.class);
+                if (user != null) {
+                    user.setSynced(true);
+                    executor.execute(() -> {
+                        userDao.insert(user);
+                        if (onComplete != null) mainHandler.post(onComplete);
+                    });
+                } else {
+                    if (onComplete != null) onComplete.run();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                if (onComplete != null) onComplete.run();
+            }
+        });
     }
 
-    private void syncUsersFromFirebase(DataCallback<Void> callback) {
-        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+    private void syncUsersByUniversity(String university, DataCallback<Void> callback) {
+        if (university == null || university.isEmpty()) {
+            callback.onSuccess(null);
+            return;
+        }
+        usersRef.orderByChild("university").equalTo(university).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 executor.execute(() -> {
@@ -216,23 +260,62 @@ public class CommunityRepository {
     }
 
     private void syncFriendshipsFromFirebase(DataCallback<Void> callback) {
-        friendshipsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        String currentUserId = sessionManager.getUid();
+        if (currentUserId == null) {
+            callback.onSuccess(null);
+            return;
+        }
+
+        friendshipsRef.orderByChild("senderId").equalTo(currentUserId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                executor.execute(() -> {
-                    for (DataSnapshot friendshipSnapshot : snapshot.getChildren()) {
-                        Friendship friendship = friendshipSnapshot.getValue(Friendship.class);
-                        if (friendship != null) {
-                            friendshipDao.insert(friendship);
+                saveFriendships(snapshot, () -> {
+                    friendshipsRef.orderByChild("receiverId").equalTo(currentUserId).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot snapshot) {
+                            saveFriendships(snapshot, () -> callback.onSuccess(null));
                         }
-                    }
-                    mainHandler.post(() -> callback.onSuccess(null));
+
+                        @Override
+                        public void onCancelled(DatabaseError error) {
+                            mainHandler.post(() -> callback.onError(error.toException()));
+                        }
+                    });
                 });
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
                 mainHandler.post(() -> callback.onError(error.toException()));
+            }
+        });
+    }
+
+    private void saveFriendships(DataSnapshot snapshot, Runnable onComplete) {
+        String currentUserId = sessionManager.getUid();
+        executor.execute(() -> {
+            long childrenCount = snapshot.getChildrenCount();
+            if (childrenCount == 0) {
+                mainHandler.post(onComplete);
+                return;
+            }
+
+            java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger((int) childrenCount);
+            for (DataSnapshot s : snapshot.getChildren()) {
+                Friendship f = s.getValue(Friendship.class);
+                if (f != null) {
+                    friendshipDao.insert(f);
+                    String otherUid = f.getSenderId().equals(currentUserId) ? f.getReceiverId() : f.getSenderId();
+                    syncSingleUser(otherUid, () -> {
+                        if (pending.decrementAndGet() == 0) {
+                            onComplete.run();
+                        }
+                    });
+                } else {
+                    if (pending.decrementAndGet() == 0) {
+                        onComplete.run();
+                    }
+                }
             }
         });
     }

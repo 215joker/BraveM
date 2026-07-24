@@ -4,27 +4,33 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.bravem.app.data.local.AppDatabase;
-import com.bravem.app.data.local.AppDatabase;
 import com.bravem.app.data.local.PaperDao;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.model.User;
 import com.bravem.app.utils.FileUtils;
 import com.bravem.app.utils.NotificationHelper;
 import com.bravem.app.utils.SessionManager;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Handles past-paper local file storage and metadata read/write in Room.
- */
 public class PaperRepository {
 
     private final Context context;
     private final PaperDao paperDao;
-    private final com.bravem.app.data.NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+    private final DatabaseReference papersRef;
+    private final StorageReference storageRef;
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
     private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 
@@ -35,199 +41,236 @@ public class PaperRepository {
     public PaperRepository(Context context) {
         this.context = context.getApplicationContext();
         this.paperDao = AppDatabase.getInstance(context).paperDao();
-        this.notificationRepository = new com.bravem.app.data.NotificationRepository(context);
+        this.notificationRepository = new NotificationRepository(context);
+        this.papersRef = FirebaseDatabase.getInstance().getReference("papers");
+        this.storageRef = FirebaseStorage.getInstance().getReference("papers");
     }
 
-    public void uploadPaper(Uri fileUri, String originalFileName, PastPaper paperMeta,
-                             UploadProgressListener progressListener,
-                             DataCallback<PastPaper> callback) {
+    public void uploadPaper(final Uri fileUri, final String originalFileName, final PastPaper paperMeta,
+                             final UploadProgressListener progressListener,
+                             final DataCallback<PastPaper> callback) {
 
-        executor.execute(() -> {
-            String localPath = FileUtils.copyFileToInternalStorage(context, fileUri, originalFileName);
-            if (localPath != null) {
-                if (progressListener != null) mainHandler.post(() -> progressListener.onProgress(100));
+        final String paperId = UUID.randomUUID().toString();
+        final StorageReference fileRef = storageRef.child(paperId + "_" + originalFileName);
 
-                paperMeta.setId(UUID.randomUUID().toString());
-                paperMeta.setFileUrl(localPath);
-                paperMeta.setFileName(originalFileName);
-                paperMeta.setCreatedAt(System.currentTimeMillis());
-                paperMeta.setSynced(false); // Mark for sync
+        fileRef.putFile(fileUri)
+                .addOnProgressListener(snapshot -> {
+                    if (progressListener != null) {
+                        int progress = (int) (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
+                        progressListener.onProgress(progress);
+                    }
+                })
+                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    paperMeta.setId(paperId);
+                    paperMeta.setFileUrl(uri.toString());
+                    paperMeta.setFileName(originalFileName);
+                    paperMeta.setCreatedAt(System.currentTimeMillis());
+                    paperMeta.setSynced(true);
 
-                paperDao.insert(paperMeta);
-                
-                // Notification for the uploader
-                String currentUid = new SessionManager(context).getUid();
-                notificationRepository.addNotification(
-                        "Upload Complete",
-                        "Paper '" + paperMeta.getTitle() + "' uploaded successfully.",
-                        "upload",
-                        currentUid,
-                        paperMeta.getId()
-                );
+                    // Save metadata to Realtime Database
+                    papersRef.child(paperId).setValue(paperMeta).addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            executor.execute(() -> {
+                                paperDao.insert(paperMeta);
+                                // Notifications...
+                                String currentUid = new SessionManager(context).getUid();
+                                notificationRepository.addNotification(
+                                        "Upload Complete",
+                                        "Paper '" + paperMeta.getTitle() + "' uploaded successfully.",
+                                        "upload",
+                                        currentUid,
+                                        paperId
+                                );
+                                mainHandler.post(() -> {
+                                    NotificationHelper.showNotification(context, "Upload Complete", "Paper '" + paperMeta.getTitle() + "' uploaded successfully.");
+                                    callback.onSuccess(paperMeta);
+                                });
+                            });
+                        } else {
+                            mainHandler.post(() -> callback.onError(task.getException()));
+                        }
+                    });
+                }))
+                .addOnFailureListener(e -> mainHandler.post(() -> callback.onError(e)));
+    }
 
-                // Notification for other students in the SAME degree and intake
+    public void syncPapers(final DataCallback<Void> callback) {
+        papersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
                 executor.execute(() -> {
-                    List<User> users = AppDatabase.getInstance(context).userDao().getAll();
-                    for (User user : users) {
-                        if (user.getUid().equals(currentUid)) continue;
-                        
-                        if (paperMeta.getDegreeId() != null && paperMeta.getDegreeId().equals(user.getDegreeId()) &&
-                            paperMeta.getIntake() != null && paperMeta.getIntake().equals(user.getIntake())) {
-                            
-                            // Note: addNotification in its current form adds to the LOCAL DB of the current user.
-                            // In a real app with a backend, this would be a server-side trigger or push notification.
-                            // Since this project is purely local (using Room to replace Firebase), 
-                            // we simulate the "others receive" by adding it here, 
-                            // although in a real local-only app, "other users" don't share the same database instance on different devices.
-                            // Assuming for this task that 'others' refers to other user entries in the same local DB.
-                            
-                            notificationRepository.addNotification(
-                                "New Paper Available",
-                                "A new paper '" + paperMeta.getTitle() + "' has been uploaded for your degree.",
-                                "new_paper",
-                                user.getUid(),
-                                paperMeta.getId()
-                            );
+                    for (DataSnapshot paperSnapshot : snapshot.getChildren()) {
+                        PastPaper paper = paperSnapshot.getValue(PastPaper.class);
+                        if (paper != null) {
+                            paperDao.insert(paper);
                         }
                     }
-                });
-
-                mainHandler.post(() -> {
-                    NotificationHelper.showNotification(context, "Upload Complete", "Paper '" + paperMeta.getTitle() + "' uploaded successfully.");
-                    callback.onSuccess(paperMeta);
-                });
-            } else {
-                String currentUid = new SessionManager(context).getUid();
-                notificationRepository.addNotification(
-                        "Upload Failed",
-                        "Could not upload '" + paperMeta.getTitle() + "'.",
-                        "upload",
-                        currentUid,
-                        null
-                );
-                mainHandler.post(() -> {
-                    NotificationHelper.showNotification(context, "Upload Failed", "Could not upload '" + paperMeta.getTitle() + "'.");
-                    callback.onError(new Exception("Failed to copy file to local storage"));
+                    mainHandler.post(() -> callback.onSuccess(null));
                 });
             }
-        });
-    }
 
-    public void fetchPapersForCourse(String courseId, DataCallback<List<PastPaper>> callback) {
-        executor.execute(() -> {
-            List<PastPaper> papers = paperDao.getByCourseId(courseId);
-            mainHandler.post(() -> callback.onSuccess(papers));
-        });
-    }
-
-    public void fetchPapersForDegree(String degreeId, int limit, DataCallback<List<PastPaper>> callback) {
-        String currentUid = new SessionManager(context).getUid();
-        executor.execute(() -> {
-            List<PastPaper> papers = paperDao.getByDegreeId(degreeId, currentUid);
-            if (papers.size() > limit) {
-                papers = papers.subList(0, limit);
-            }
-            List<PastPaper> finalPapers = papers;
-            mainHandler.post(() -> callback.onSuccess(finalPapers));
-        });
-    }
-
-    public void fetchRecommendedPapers(String degreeId, String intake, int limit, DataCallback<List<PastPaper>> callback) {
-        String currentUid = new SessionManager(context).getUid();
-        executor.execute(() -> {
-            if (intake == null || !intake.contains(".")) {
-                List<PastPaper> papers = paperDao.getByDegreeId(degreeId, currentUid);
-                if (papers.size() > limit) papers = papers.subList(0, limit);
-                List<PastPaper> finalPapers = papers;
-                mainHandler.post(() -> callback.onSuccess(finalPapers));
-                return;
-            }
-
-            try {
-                String[] parts = intake.split("\\.");
-                int year = Integer.parseInt(parts[0]);
-                String semNum = parts[1];
-                String semesterQuery = "Semester " + semNum;
-
-                List<PastPaper> papers = paperDao.getRecommended(degreeId, year, semesterQuery, currentUid);
-                
-                // If no exact matches for the intake, fall back to degree-wide papers
-                if (papers.isEmpty()) {
-                    papers = paperDao.getByDegreeId(degreeId, currentUid);
-                    if (papers.size() > limit) papers = papers.subList(0, limit);
-                    List<PastPaper> finalPapers = papers;
-                    mainHandler.post(() -> callback.onSuccess(finalPapers));
-                    return;
-                }
-
-                if (papers.size() > limit) {
-                    papers = papers.subList(0, limit);
-                }
-                List<PastPaper> finalPapers = papers;
-                mainHandler.post(() -> callback.onSuccess(finalPapers));
-            } catch (Exception e) {
-                List<PastPaper> papers = paperDao.getByDegreeId(degreeId, currentUid);
-                if (papers.size() > limit) papers = papers.subList(0, limit);
-                List<PastPaper> finalPapers = papers;
-                mainHandler.post(() -> callback.onSuccess(finalPapers));
+            @Override
+            public void onCancelled(DatabaseError error) {
+                mainHandler.post(() -> callback.onError(error.toException()));
             }
         });
     }
 
-    public void fetchRecentPapers(int limit, DataCallback<List<PastPaper>> callback) {
-        executor.execute(() -> {
-            List<PastPaper> papers = paperDao.getAll();
-            if (papers.size() > limit) {
-                papers = papers.subList(0, limit);
+    public void fetchPapersForCourse(final String courseId, final DataCallback<List<PastPaper>> callback) {
+        syncPapers(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getByCourseId(courseId);
+                    mainHandler.post(() -> callback.onSuccess(papers));
+                });
             }
-            List<PastPaper> finalPapers = papers;
-            mainHandler.post(() -> callback.onSuccess(finalPapers));
+            @Override
+            public void onError(Exception e) {
+                // Fallback to local
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getByCourseId(courseId);
+                    mainHandler.post(() -> callback.onSuccess(papers));
+                });
+            }
         });
     }
 
-    public void fetchPapersUploadedBy(String uid, DataCallback<List<PastPaper>> callback) {
+    public void fetchPapersForDegree(final String degreeId, final int limit, final DataCallback<List<PastPaper>> callback) {
+        syncPapers(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                final String currentUid = new SessionManager(context).getUid();
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getByDegreeId(degreeId, currentUid);
+                    final List<PastPaper> resultList = (papers.size() > limit) ? papers.subList(0, limit) : papers;
+                    mainHandler.post(() -> callback.onSuccess(resultList));
+                });
+            }
+            @Override
+            public void onError(Exception e) {
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getByDegreeId(degreeId, new SessionManager(context).getUid());
+                    final List<PastPaper> resultList = (papers.size() > limit) ? papers.subList(0, limit) : papers;
+                    mainHandler.post(() -> callback.onSuccess(resultList));
+                });
+            }
+        });
+    }
+
+    public void fetchRecommendedPapers(final String degreeId, final String intake, final int limit, final DataCallback<List<PastPaper>> callback) {
+        syncPapers(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                final String currentUid = new SessionManager(context).getUid();
+                executor.execute(() -> {
+                    final List<PastPaper> papersList;
+                    if (intake != null && intake.contains(".")) {
+                        List<PastPaper> temp;
+                        try {
+                            String[] parts = intake.split("\\.");
+                            int year = Integer.parseInt(parts[0]);
+                            String semNum = parts[1];
+                            String semesterQuery = "Semester " + semNum;
+                            temp = paperDao.getRecommended(degreeId, year, semesterQuery, currentUid);
+                        } catch (Exception e) {
+                            temp = paperDao.getByDegreeId(degreeId, currentUid);
+                        }
+                        papersList = temp;
+                    } else {
+                        papersList = paperDao.getByDegreeId(degreeId, currentUid);
+                    }
+                    final List<PastPaper> resultList = (papersList.size() > limit) ? papersList.subList(0, limit) : papersList;
+                    mainHandler.post(() -> callback.onSuccess(resultList));
+                });
+            }
+            @Override
+            public void onError(Exception e) {
+                fetchPapersForDegree(degreeId, limit, callback);
+            }
+        });
+    }
+
+    public void fetchRecentPapers(final int limit, final DataCallback<List<PastPaper>> callback) {
+        syncPapers(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getAll();
+                    final List<PastPaper> resultList = (papers.size() > limit) ? papers.subList(0, limit) : papers;
+                    mainHandler.post(() -> callback.onSuccess(resultList));
+                });
+            }
+            @Override
+            public void onError(Exception e) {
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getAll();
+                    final List<PastPaper> resultList = (papers.size() > limit) ? papers.subList(0, limit) : papers;
+                    mainHandler.post(() -> callback.onSuccess(resultList));
+                });
+            }
+        });
+    }
+
+    public void fetchPapersUploadedBy(final String uid, final DataCallback<List<PastPaper>> callback) {
         executor.execute(() -> {
-            List<PastPaper> papers = paperDao.getByUploader(uid);
+            final List<PastPaper> papers = paperDao.getByUploader(uid);
             mainHandler.post(() -> callback.onSuccess(papers));
         });
     }
 
-    public void fetchAllPapersForAdmin(DataCallback<List<PastPaper>> callback) {
+    public void fetchAllPapersForAdmin(final DataCallback<List<PastPaper>> callback) {
+        syncPapers(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getAll();
+                    mainHandler.post(() -> callback.onSuccess(papers));
+                });
+            }
+            @Override
+            public void onError(Exception e) {
+                executor.execute(() -> {
+                    final List<PastPaper> papers = paperDao.getAll();
+                    mainHandler.post(() -> callback.onSuccess(papers));
+                });
+            }
+        });
+    }
+
+    public void searchPapersByTitlePrefix(final String queryText, final DataCallback<List<PastPaper>> callback) {
         executor.execute(() -> {
-            List<PastPaper> papers = paperDao.getAll();
+            final List<PastPaper> papers = paperDao.search(queryText);
             mainHandler.post(() -> callback.onSuccess(papers));
         });
     }
 
-    public void searchPapersByTitlePrefix(String queryText, DataCallback<List<PastPaper>> callback) {
+    public void deletePaper(final String paperId, final DataCallback<Void> callback) {
         executor.execute(() -> {
-            List<PastPaper> papers = paperDao.search(queryText);
-            mainHandler.post(() -> callback.onSuccess(papers));
-        });
-    }
-
-    public void deletePaper(String paperId, DataCallback<Void> callback) {
-        executor.execute(() -> {
-            PastPaper paper = paperDao.getById(paperId);
+            final PastPaper paper = paperDao.getById(paperId);
             if (paper != null) {
-                paperDao.delete(paper);
-                mainHandler.post(() -> callback.onSuccess(null));
+                papersRef.child(paperId).removeValue().addOnCompleteListener(task -> {
+                    executor.execute(() -> {
+                        paperDao.delete(paper);
+                        mainHandler.post(() -> callback.onSuccess(null));
+                    });
+                });
             } else {
                 mainHandler.post(() -> callback.onError(new Exception("Paper not found")));
             }
         });
     }
 
-    public void fetchPinnedPapers(DataCallback<List<PastPaper>> callback) {
+    public void fetchPinnedPapers(final DataCallback<List<PastPaper>> callback) {
         executor.execute(() -> {
-            List<PastPaper> papers = paperDao.getPinned();
+            final List<PastPaper> papers = paperDao.getPinned();
             mainHandler.post(() -> callback.onSuccess(papers));
         });
     }
 
-    public void togglePin(String paperId, DataCallback<Boolean> callback) {
+    public void togglePin(final String paperId, final DataCallback<Boolean> callback) {
         executor.execute(() -> {
-            PastPaper paper = paperDao.getById(paperId);
+            final PastPaper paper = paperDao.getById(paperId);
             if (paper != null) {
                 boolean newState = !paper.isPinned();
                 if (newState && paperDao.getPinnedCount() >= 10) {
@@ -243,13 +286,17 @@ public class PaperRepository {
         });
     }
 
-    public void setPaperApproved(String paperId, boolean approved, DataCallback<Void> callback) {
+    public void setPaperApproved(final String paperId, final boolean approved, final DataCallback<Void> callback) {
         executor.execute(() -> {
-            PastPaper paper = paperDao.getById(paperId);
+            final PastPaper paper = paperDao.getById(paperId);
             if (paper != null) {
                 paper.setApproved(approved);
-                paperDao.update(paper);
-                mainHandler.post(() -> callback.onSuccess(null));
+                papersRef.child(paperId).child("approved").setValue(approved).addOnCompleteListener(task -> {
+                    executor.execute(() -> {
+                        paperDao.update(paper);
+                        mainHandler.post(() -> callback.onSuccess(null));
+                    });
+                });
             } else {
                 mainHandler.post(() -> callback.onError(new Exception("Paper not found")));
             }

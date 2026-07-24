@@ -19,6 +19,7 @@ public class Degree implements Serializable {
     private String description;
     private String university;
     private long createdAt;
+    private boolean isSynced;
 
     public Degree() {
     }
@@ -33,6 +34,7 @@ public class Degree implements Serializable {
         this.description = description;
         this.university = university;
         this.createdAt = createdAt;
+        this.isSynced = false;
     }
 
     @NonNull
@@ -74,5 +76,13 @@ public class Degree implements Serializable {
 
     public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isSynced() {
+        return isSynced;
+    }
+
+    public void setSynced(boolean synced) {
+        isSynced = synced;
     }
 }

@@ -33,6 +33,7 @@ public class User implements Serializable {
     private boolean isSynced;
     private boolean isSuspended;
     private long suspendedUntil;
+    private String appVersion;
 
     public User() {
     }
@@ -51,6 +52,7 @@ public class User implements Serializable {
         this.deletionRequested = false;
         this.deletionRequestedAt = 0;
         this.isSynced = false;
+        this.appVersion = "1.2.3";
     }
 
     @NonNull
@@ -180,6 +182,14 @@ public class User implements Serializable {
 
     public void setSuspendedUntil(long suspendedUntil) {
         this.suspendedUntil = suspendedUntil;
+    }
+
+    public String getAppVersion() {
+        return appVersion;
+    }
+
+    public void setAppVersion(String appVersion) {
+        this.appVersion = appVersion;
     }
 
     public boolean isAdmin() {

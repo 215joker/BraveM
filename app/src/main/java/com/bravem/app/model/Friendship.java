@@ -11,22 +11,34 @@ public class Friendship implements Serializable {
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_ACCEPTED = "ACCEPTED";
 
-    @PrimaryKey(autoGenerate = true)
-    private int id;
+    @PrimaryKey
+    @NonNull
+    private String id;
     private String senderId;
     private String receiverId;
     private String status;
     private long updatedAt;
 
+    public Friendship() {
+        this.id = "";
+    }
+
     public Friendship(String senderId, String receiverId, String status, long updatedAt) {
+        this.id = generateId(senderId, receiverId);
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.status = status;
         this.updatedAt = updatedAt;
     }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public static String generateId(String u1, String u2) {
+        if (u1 == null || u2 == null) return "";
+        return u1.compareTo(u2) < 0 ? u1 + "_" + u2 : u2 + "_" + u1;
+    }
+
+    @NonNull
+    public String getId() { return id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
     public String getSenderId() { return senderId; }
     public void setSenderId(String senderId) { this.senderId = senderId; }

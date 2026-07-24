@@ -22,6 +22,9 @@ public interface CourseDao {
     @Query("SELECT * FROM courses WHERE id = :id LIMIT 1")
     Course getById(String id);
 
+    @Query("SELECT * FROM courses WHERE isSynced = 0")
+    List<Course> getUnsynced();
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(Course course);
 

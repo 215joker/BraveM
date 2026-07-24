@@ -5,6 +5,11 @@ import android.content.Context;
 import com.bravem.app.data.local.AppDatabase;
 import com.bravem.app.data.local.DegreeDao;
 import com.bravem.app.model.Degree;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 import java.util.UUID;
@@ -12,36 +17,100 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Handles reads/writes for degrees using local Room storage.
+ * Handles reads/writes for degrees using local Room storage and Firebase sync.
  */
 public class DegreeRepository {
 
     private final DegreeDao degreeDao;
+    private final DatabaseReference degreesRef;
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
     private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 
     public DegreeRepository(Context context) {
         this.degreeDao = AppDatabase.getInstance(context).degreeDao();
+        this.degreesRef = FirebaseDatabase.getInstance().getReference("degrees");
+    }
+
+    public void syncDegrees(DataCallback<Void> callback) {
+        degreesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                executor.execute(() -> {
+                    for (DataSnapshot degreeSnapshot : snapshot.getChildren()) {
+                        Degree degree = degreeSnapshot.getValue(Degree.class);
+                        if (degree != null) {
+                            degree.setSynced(true);
+                            degreeDao.insert(degree);
+                        }
+                    }
+                    mainHandler.post(() -> callback.onSuccess(null));
+                });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                mainHandler.post(() -> callback.onError(error.toException()));
+            }
+        });
     }
 
     public void fetchAllDegrees(DataCallback<List<Degree>> callback) {
-        executor.execute(() -> {
-            List<Degree> degrees = degreeDao.getAll();
-            mainHandler.post(() -> callback.onSuccess(degrees));
+        syncDegrees(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                executor.execute(() -> {
+                    List<Degree> degrees = degreeDao.getAll();
+                    mainHandler.post(() -> callback.onSuccess(degrees));
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                executor.execute(() -> {
+                    List<Degree> degrees = degreeDao.getAll();
+                    mainHandler.post(() -> callback.onSuccess(degrees));
+                });
+            }
         });
     }
 
     public void fetchAllUniversities(DataCallback<List<String>> callback) {
-        executor.execute(() -> {
-            List<String> universities = degreeDao.getUniqueUniversities();
-            mainHandler.post(() -> callback.onSuccess(universities));
+        syncDegrees(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                executor.execute(() -> {
+                    List<String> universities = degreeDao.getUniqueUniversities();
+                    mainHandler.post(() -> callback.onSuccess(universities));
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                executor.execute(() -> {
+                    List<String> universities = degreeDao.getUniqueUniversities();
+                    mainHandler.post(() -> callback.onSuccess(universities));
+                });
+            }
         });
     }
 
     public void fetchDegreesByUniversity(String university, DataCallback<List<Degree>> callback) {
-        executor.execute(() -> {
-            List<Degree> degrees = degreeDao.getByUniversity(university);
-            mainHandler.post(() -> callback.onSuccess(degrees));
+        syncDegrees(new DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                executor.execute(() -> {
+                    List<Degree> degrees = degreeDao.getByUniversity(university);
+                    mainHandler.post(() -> callback.onSuccess(degrees));
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                executor.execute(() -> {
+                    List<Degree> degrees = degreeDao.getByUniversity(university);
+                    mainHandler.post(() -> callback.onSuccess(degrees));
+                });
+            }
         });
     }
 

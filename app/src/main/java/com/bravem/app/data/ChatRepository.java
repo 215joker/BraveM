@@ -31,6 +31,9 @@ public class ChatRepository {
     private final DatabaseReference messagesRef;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    
+    private ValueEventListener currentChatListener;
+    private DatabaseReference currentChatRef;
 
     public ChatRepository(Context context) {
         this.context = context.getApplicationContext();
@@ -44,10 +47,12 @@ public class ChatRepository {
     }
 
     public void startListening(String otherUserId, DataCallback<List<ChatMessage>> callback) {
+        stopListening();
         String currentUserId = sessionManager.getUid();
         String chatId = getChatId(currentUserId, otherUserId);
         
-        messagesRef.child(chatId).addValueEventListener(new ValueEventListener() {
+        currentChatRef = messagesRef.child(chatId);
+        currentChatListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 executor.execute(() -> {
@@ -67,15 +72,29 @@ public class ChatRepository {
             public void onCancelled(DatabaseError error) {
                 mainHandler.post(() -> callback.onError(error.toException()));
             }
-        });
+        };
+        currentChatRef.addValueEventListener(currentChatListener);
+    }
+
+    public void stopListening() {
+        if (currentChatRef != null && currentChatListener != null) {
+            currentChatRef.removeEventListener(currentChatListener);
+            currentChatRef = null;
+            currentChatListener = null;
+        }
     }
 
     private String getChatId(String u1, String u2) {
+        if (u1 == null || u2 == null) return "unknown_chat";
         return u1.compareTo(u2) < 0 ? u1 + "_" + u2 : u2 + "_" + u1;
     }
 
     public void getChatHistory(String otherUserId, DataCallback<List<ChatMessage>> callback) {
         String currentUserId = sessionManager.getUid();
+        if (currentUserId == null || otherUserId == null) {
+            callback.onError(new Exception("User not authenticated or receiver invalid"));
+            return;
+        }
         executor.execute(() -> {
             try {
                 List<ChatMessage> history = chatMessageDao.getChatHistory(currentUserId, otherUserId);
@@ -88,10 +107,18 @@ public class ChatRepository {
 
     public void sendMessage(String receiverId, String message, String attachmentPath, String attachmentType, DataCallback<ChatMessage> callback) {
         String senderId = sessionManager.getUid();
+        if (senderId == null || receiverId == null) {
+            callback.onError(new Exception("User not authenticated or receiver invalid"));
+            return;
+        }
         String senderName = sessionManager.getFullName();
         executor.execute(() -> {
             try {
                 String messageId = messagesRef.push().getKey();
+                if (messageId == null) {
+                    mainHandler.post(() -> callback.onError(new Exception("Failed to generate message ID")));
+                    return;
+                }
                 ChatMessage chatMessage = new ChatMessage(senderId, receiverId, message, System.currentTimeMillis());
                 chatMessage.setId(messageId);
                 chatMessage.setAttachmentPath(attachmentPath);
@@ -112,7 +139,7 @@ public class ChatRepository {
                             // Notification for receiver
                             notificationRepository.addNotification(
                                     "New Message from " + senderName,
-                                    message != null ? message : "Sent an attachment",
+                                    message != null && !message.isEmpty() ? message : "Sent an attachment",
                                     "chat_message",
                                     receiverId,
                                     senderId

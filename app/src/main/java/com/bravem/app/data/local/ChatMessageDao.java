@@ -2,6 +2,7 @@ package com.bravem.app.data.local;
 
 import androidx.room.Dao;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import com.bravem.app.model.ChatMessage;
@@ -10,7 +11,7 @@ import java.util.List;
 
 @Dao
 public interface ChatMessageDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(ChatMessage message);
 
     @Query("SELECT * FROM chat_messages WHERE (senderId = :userId1 AND receiverId = :userId2) OR (senderId = :userId2 AND receiverId = :userId1) ORDER BY timestamp ASC")
