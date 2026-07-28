@@ -43,7 +43,7 @@ public class PaperRepository {
         this.paperDao = AppDatabase.getInstance(context).paperDao();
         this.notificationRepository = new NotificationRepository(context);
         this.papersRef = FirebaseDatabase.getInstance().getReference("papers");
-        this.storageRef = FirebaseStorage.getInstance().getReference("papers");
+        this.storageRef = FirebaseStorage.getInstance().getReference().child("papers");
     }
 
     public void uploadPaper(final Uri fileUri, final String originalFileName, final PastPaper paperMeta,
