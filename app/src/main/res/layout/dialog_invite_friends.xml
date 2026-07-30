@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card_default"
+    android:backgroundTint="@color/parchment_50"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="serif"
+        android:text="Invite to Study Room"
+        android:textColor="@color/ink_900"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_invite_friends"
+        android:layout_width="match_parent"
+        android:layout_height="300dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_done"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Done"
+        app:backgroundTint="@color/ink_900"
+        app:cornerRadius="24dp" />
+
+</LinearLayout>

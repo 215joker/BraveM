@@ -10,11 +10,9 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bravem.app.R;
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.model.User;
-import com.bravem.app.ui.admin.AdminDashboardActivity;
-import com.bravem.app.ui.dashboard.DashboardActivity;
+import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.utils.SessionManager;
 import com.bravem.app.utils.UiUtils;
 import com.google.android.material.button.MaterialButton;
@@ -34,7 +32,7 @@ public class RegisterActivity extends AppCompatActivity {
     private View loginLink;
     private CircularProgressIndicator progressIndicator;
 
-    private AuthRepository authRepository;
+    private UserRepository userRepository;
     private SessionManager sessionManager;
 
     @Override
@@ -47,7 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
         UiUtils.handleTopInset(root);
         UiUtils.handleBottomInset(root);
 
-        authRepository = new AuthRepository(this);
+        userRepository = new AuthRepositoryImpl(this);
         sessionManager = new SessionManager(this);
 
         nameLayout = findViewById(R.id.layout_name);
@@ -88,7 +86,6 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void handleSocialLogin(String provider) {
         Toast.makeText(this, provider + " registration coming soon. Configure API keys first.", Toast.LENGTH_SHORT).show();
-        // TODO: Implement Social Login with Firebase
     }
 
     @Override
@@ -131,8 +128,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        // Check if user already exists before proceeding
-        authRepository.checkUserExists(email, new DataCallback<Boolean>() {
+        userRepository.checkUserExists(email, new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean exists) {
                 setLoading(false);

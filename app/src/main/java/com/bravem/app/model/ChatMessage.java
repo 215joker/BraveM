@@ -13,6 +13,8 @@ public class ChatMessage implements Serializable {
     private String id;
     private String senderId;
     private String receiverId;
+    private String groupId;
+    private boolean isGroup;
     private String message;
     private long timestamp;
     private boolean isRead;
@@ -39,6 +41,12 @@ public class ChatMessage implements Serializable {
 
     public String getReceiverId() { return receiverId; }
     public void setReceiverId(String receiverId) { this.receiverId = receiverId; }
+
+    public String getGroupId() { return groupId; }
+    public void setGroupId(String groupId) { this.groupId = groupId; }
+
+    public boolean isGroup() { return isGroup; }
+    public void setGroup(boolean group) { isGroup = group; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

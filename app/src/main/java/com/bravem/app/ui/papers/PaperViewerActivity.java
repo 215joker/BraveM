@@ -35,6 +35,7 @@ public class PaperViewerActivity extends AppCompatActivity {
     private View backButton;
 
     private PastPaper paper;
+    private boolean isMemo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +44,7 @@ public class PaperViewerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_paper_viewer);
 
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
-        UiUtils.handleBottomInset(findViewById(R.id.btn_download));
+        UiUtils.handleFabBottomInset(findViewById(R.id.btn_download), 20);
 
         pdfView = findViewById(R.id.pdf_view);
         docxPlaceholder = findViewById(R.id.layout_docx_placeholder);
@@ -55,6 +56,8 @@ public class PaperViewerActivity extends AppCompatActivity {
         backButton.setOnClickListener(v -> finish());
 
         paper = (PastPaper) getIntent().getSerializableExtra(EXTRA_PAPER);
+        isMemo = getIntent().getBooleanExtra("is_memo", false);
+
         if (paper == null) {
             finish();
             return;
@@ -64,7 +67,8 @@ public class PaperViewerActivity extends AppCompatActivity {
     }
 
     private void bind() {
-        titleView.setText(paper.getTitle());
+        String displayTitle = isMemo ? paper.getTitle() + " (Memo)" : paper.getTitle();
+        titleView.setText(displayTitle);
 
         String meta = paper.getCourseCode() != null ? paper.getCourseCode() + " · " : "";
         meta += paper.getYear() > 0 ? String.valueOf(paper.getYear()) : "";
@@ -72,15 +76,26 @@ public class PaperViewerActivity extends AppCompatActivity {
 
         downloadButton.setOnClickListener(v -> downloadPaper());
 
-        if (PastPaper.TYPE_PDF.equals(paper.getFileType()) && paper.getFileUrl() != null) {
+        String targetUrl = isMemo ? paper.getMemoUrl() : paper.getFileUrl();
+        String fileType = isMemo ? FileUtils.detectFileType(paper.getMemoName()) : paper.getFileType();
+
+        if (PastPaper.TYPE_PDF.equals(fileType) && targetUrl != null) {
             pdfView.setVisibility(View.VISIBLE);
             docxPlaceholder.setVisibility(View.GONE);
 
-            File file = new File(paper.getFileUrl());
-            if (file.exists()) {
-                pdfView.fromFile(file).load();
+            if (targetUrl.startsWith("http")) {
+                // If it's a remote URL, we should ideally download it first or use a stream
+                // For now, let's try to load from Uri if possible, or show a message
+                Toast.makeText(this, "Loading from cloud...", Toast.LENGTH_SHORT).show();
+                // Note: barteksc PDFView doesn't support direct URLs without a stream.
+                // In a real app, we'd download to a temp file first.
             } else {
-                Toast.makeText(this, "Local file not found.", Toast.LENGTH_SHORT).show();
+                File file = new File(targetUrl);
+                if (file.exists()) {
+                    pdfView.fromFile(file).load();
+                } else {
+                    Toast.makeText(this, "File not found.", Toast.LENGTH_SHORT).show();
+                }
             }
         } else {
             pdfView.setVisibility(View.GONE);
@@ -89,13 +104,15 @@ public class PaperViewerActivity extends AppCompatActivity {
     }
 
     private void downloadPaper() {
-        if (paper.getFileUrl() == null) {
+        String targetUrl = isMemo ? paper.getMemoUrl() : paper.getFileUrl();
+        String targetName = isMemo ? paper.getMemoName() : paper.getFileName();
+
+        if (targetUrl == null) {
             Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
             return;
         }
-        // In local mode, "download" just copies to the public download folder
-        FileUtils.downloadFile(this, paper.getFileUrl(),
-                paper.getFileName() != null ? paper.getFileName() : paper.getTitle());
+        FileUtils.downloadFile(this, targetUrl,
+                targetName != null ? targetName : paper.getTitle());
         Toast.makeText(this, R.string.downloading, Toast.LENGTH_SHORT).show();
     }
 }

@@ -32,6 +32,8 @@ public class PastPaper implements Serializable {
     private String fileUrl;        // Locally: this could be a local file path
     private String fileName;
     private long fileSizeBytes;
+    private String memoUrl;        // URL/path to memorandum/answer sheet
+    private String memoName;       // Name of memorandum file
     private String uploadedByUid;
     private String uploadedByName;
     private long createdAt;
@@ -195,6 +197,22 @@ public class PastPaper implements Serializable {
 
     public void setFileSizeBytes(long fileSizeBytes) {
         this.fileSizeBytes = fileSizeBytes;
+    }
+
+    public String getMemoUrl() {
+        return memoUrl;
+    }
+
+    public void setMemoUrl(String memoUrl) {
+        this.memoUrl = memoUrl;
+    }
+
+    public String getMemoName() {
+        return memoName;
+    }
+
+    public void setMemoName(String memoName) {
+        this.memoName = memoName;
     }
 
     public String getUploadedByUid() {

@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
-import com.bravem.app.model.Degree;
+import com.bravem.app.domain.model.Degree;
 
 import java.util.ArrayList;
 import java.util.HashMap;

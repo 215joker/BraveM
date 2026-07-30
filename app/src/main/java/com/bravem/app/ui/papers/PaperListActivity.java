@@ -1,6 +1,7 @@
 package com.bravem.app.ui.papers;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -13,7 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bravem.app.R;
 import com.bravem.app.adapter.PastPaperAdapter;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.PaperRepository;
+import com.bravem.app.data.PaperRepositoryImpl;
+import com.bravem.app.domain.repository.PaperRepository;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
 import com.bravem.app.utils.UiUtils;
@@ -35,6 +37,17 @@ public class PaperListActivity extends AppCompatActivity {
     private View backButton;
 
     private PaperRepository paperRepository;
+    private PastPaper paperForMemo;
+
+    private final androidx.activity.result.ActivityResultLauncher<Intent> memoPickerLauncher =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null && paperForMemo != null) {
+                        uploadMemoOnly(uri);
+                    }
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +58,7 @@ public class PaperListActivity extends AppCompatActivity {
         UiUtils.handleTopInset(findViewById(R.id.layout_header));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
-        paperRepository = new PaperRepository(this);
+        paperRepository = new PaperRepositoryImpl(this);
 
         recyclerView = findViewById(R.id.recycler_courses);
         titleView = findViewById(R.id.text_title);
@@ -61,9 +74,7 @@ public class PaperListActivity extends AppCompatActivity {
         adapter = new PastPaperAdapter(new PastPaperAdapter.OnPaperActionListener() {
             @Override
             public void onPaperClick(PastPaper paper) {
-                Intent intent = new Intent(PaperListActivity.this, PaperViewerActivity.class);
-                intent.putExtra(PaperViewerActivity.EXTRA_PAPER, paper);
-                startActivity(intent);
+                showPaperSelectionDialog(paper);
             }
 
             @Override
@@ -87,9 +98,65 @@ public class PaperListActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.empty_state)).setText(R.string.no_papers_found);
     }
 
+    private void showPaperSelectionDialog(PastPaper paper) {
+        boolean hasMemo = paper.getMemoUrl() != null;
+        String[] options = hasMemo 
+                ? new String[]{"View Question Paper", "View Memorandum"} 
+                : new String[]{"View Question Paper", "Upload Memorandum (Missing)"};
+        int[] icons = {R.drawable.ic_document, hasMemo ? R.drawable.ic_document : R.drawable.ic_upload};
+
+        com.bravem.app.utils.DialogUtils.showOptions(this, paper.getTitle(), options, icons, index -> {
+            if (index == 0) {
+                openPaperViewer(paper, false);
+            } else {
+                if (hasMemo) {
+                    openPaperViewer(paper, true);
+                } else {
+                    paperForMemo = paper;
+                    launchMemoPicker();
+                }
+            }
+        });
+    }
+
+    private void launchMemoPicker() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+        memoPickerLauncher.launch(Intent.createChooser(intent, "Select Memorandum (PDF)"));
+    }
+
+    private void uploadMemoOnly(Uri uri) {
+        String fileName = FileUtils.getFileName(this, uri);
+        Toast.makeText(this, "Uploading memorandum...", Toast.LENGTH_SHORT).show();
+        
+        paperRepository.uploadMemorandumOnly(paperForMemo.getId(), uri, fileName, null, new DataCallback<PastPaper>() {
+            @Override
+            public void onSuccess(PastPaper result) {
+                runOnUiThread(() -> {
+                    Toast.makeText(PaperListActivity.this, "Memorandum uploaded successfully!", Toast.LENGTH_LONG).show();
+                    String courseId = getIntent().getStringExtra(EXTRA_COURSE_ID);
+                    if (courseId != null) loadPapers(courseId);
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                runOnUiThread(() -> Toast.makeText(PaperListActivity.this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    private void openPaperViewer(PastPaper paper, boolean isMemo) {
+        Intent intent = new Intent(this, PaperViewerActivity.class);
+        intent.putExtra(PaperViewerActivity.EXTRA_PAPER, paper);
+        intent.putExtra("is_memo", isMemo);
+        startActivity(intent);
+    }
+
     private void loadPapers(String courseId) {
         progressIndicator.setVisibility(View.VISIBLE);
-        paperRepository.fetchPapersForCourse(courseId, new DataCallback<List<PastPaper>>() {
+        paperRepository.fetchPapersByCourse(courseId, new DataCallback<List<PastPaper>>() {
             @Override
             public void onSuccess(List<PastPaper> papers) {
                 progressIndicator.setVisibility(View.GONE);

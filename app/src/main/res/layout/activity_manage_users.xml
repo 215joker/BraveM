@@ -37,6 +37,7 @@
                     app:tint="@color/text_on_ink" />
 
                 <TextView
+                    android:id="@+id/text_title"
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"

@@ -83,10 +83,11 @@ public class SearchLogsActivity extends AppCompatActivity {
     }
 
     private void confirmClearLogs() {
-        new AlertDialog.Builder(this)
-                .setTitle("Clear all logs?")
-                .setMessage("This action cannot be undone.")
-                .setPositiveButton("Clear", (dialog, which) -> {
+        com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                "Clear all logs?",
+                "This action cannot be undone.",
+                "Clear",
+                () -> {
                     logRepository.clearLogs(new DataCallback<Void>() {
                         @Override
                         public void onSuccess(Void result) {
@@ -98,8 +99,6 @@ public class SearchLogsActivity extends AppCompatActivity {
                             Toast.makeText(SearchLogsActivity.this, R.string.error_generic, Toast.LENGTH_SHORT).show();
                         }
                     });
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                });
     }
 }

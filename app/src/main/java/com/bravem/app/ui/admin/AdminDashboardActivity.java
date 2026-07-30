@@ -9,13 +9,15 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bravem.app.R;
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.DegreeRepository;
-import com.bravem.app.data.PaperRepository;
-import com.bravem.app.model.Degree;
+import com.bravem.app.data.DegreeRepositoryImpl;
+import com.bravem.app.data.PaperRepositoryImpl;
+import com.bravem.app.domain.model.User;
+import com.bravem.app.domain.repository.DegreeRepository;
+import com.bravem.app.domain.repository.PaperRepository;
+import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.model.PastPaper;
-import com.bravem.app.model.User;
 import com.bravem.app.ui.auth.LoginActivity;
 import com.bravem.app.utils.SessionManager;
 import com.bravem.app.utils.UiUtils;
@@ -24,7 +26,7 @@ import java.util.List;
 
 public class AdminDashboardActivity extends AppCompatActivity {
 
-    private AuthRepository authRepository;
+    private UserRepository userRepository;
     private DegreeRepository degreeRepository;
     private PaperRepository paperRepository;
     private SessionManager sessionManager;
@@ -42,9 +44,9 @@ public class AdminDashboardActivity extends AppCompatActivity {
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
-        authRepository = new AuthRepository(this);
-        degreeRepository = new DegreeRepository(this);
-        paperRepository = new PaperRepository(this);
+        userRepository = new AuthRepositoryImpl(this);
+        degreeRepository = new DegreeRepositoryImpl(this);
+        paperRepository = new PaperRepositoryImpl(this);
         chatRepository = new com.bravem.app.data.ChatRepository(this);
         sessionManager = new SessionManager(this);
 
@@ -90,7 +92,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 startActivity(new Intent(this, ClearTempFilesActivity.class)));
 
         findViewById(R.id.btn_logout).setOnClickListener(v -> {
-            authRepository.logout();
+            userRepository.logout();
             sessionManager.clear();
             Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -100,12 +102,12 @@ public class AdminDashboardActivity extends AppCompatActivity {
     }
 
     private void refreshStats() {
-        authRepository.fetchAllUsers(new DataCallback<List<User>>() {
+        userRepository.fetchAllUsers(new DataCallback<>() {
             @Override
             public void onSuccess(List<User> result) {
                 int studentCount = 0;
                 for (User user : result) {
-                    if (User.ROLE_STUDENT.equals(user.getRole()) && !user.isDeletionRequested()) {
+                    if ("student".equalsIgnoreCase(user.getRole())) {
                         studentCount++;
                     }
                 }
@@ -118,9 +120,9 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         });
 
-        degreeRepository.fetchAllDegrees(new DataCallback<List<Degree>>() {
+        degreeRepository.fetchAllDegrees(new DataCallback<>() {
             @Override
-            public void onSuccess(List<Degree> result) {
+            public void onSuccess(List<com.bravem.app.domain.model.Degree> result) {
                 tvStatDegrees.setText(String.valueOf(result.size()));
             }
 
@@ -130,7 +132,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         });
 
-        degreeRepository.fetchAllUniversities(new DataCallback<List<String>>() {
+        degreeRepository.fetchAllUniversities(new DataCallback<>() {
             @Override
             public void onSuccess(List<String> result) {
                 tvStatUniversities.setText(String.valueOf(result.size()));
@@ -142,7 +144,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         });
 
-        paperRepository.fetchAllPapersForAdmin(new DataCallback<List<PastPaper>>() {
+        paperRepository.fetchAllPapersForAdmin(new DataCallback<>() {
             @Override
             public void onSuccess(List<PastPaper> result) {
                 tvStatPapers.setText(String.valueOf(result.size()));
@@ -154,7 +156,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         });
 
-        chatRepository.getTotalUnreadCount(new DataCallback<Integer>() {
+        chatRepository.getTotalUnreadCount(new DataCallback<>() {
             @Override
             public void onSuccess(Integer count) {
                 if (count > 0) {
@@ -178,4 +180,3 @@ public class AdminDashboardActivity extends AppCompatActivity {
         refreshStats();
     }
 }
-

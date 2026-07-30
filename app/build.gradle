@@ -77,6 +77,9 @@ dependencies {
     // WorkManager
     implementation 'androidx.work:work-runtime:2.9.0'
 
+    // Security
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
     // PDF viewing
     implementation 'io.github.oothp:android-pdf-viewer:3.2.0-beta06'
 
@@ -98,4 +101,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-config'
     implementation 'com.google.firebase:firebase-perf'
+
+    // Agora SDK for Video Calling
+    implementation 'io.agora.rtc:full-sdk:4.4.0'
 }

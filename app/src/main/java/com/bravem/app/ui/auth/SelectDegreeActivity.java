@@ -17,11 +17,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.adapter.DegreeAdapter;
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.DegreeRepository;
-import com.bravem.app.model.Degree;
-import com.bravem.app.model.User;
+import com.bravem.app.data.DegreeRepositoryImpl;
+import com.bravem.app.domain.model.Degree;
+import com.bravem.app.domain.repository.DegreeRepository;
+import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.ui.dashboard.DashboardActivity;
 import com.bravem.app.utils.SessionManager;
 import com.bravem.app.utils.UiUtils;
@@ -49,7 +50,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
     private android.widget.EditText searchInput;
 
     private DegreeRepository degreeRepository;
-    private AuthRepository authRepository;
+    private UserRepository authRepository;
     private SessionManager sessionManager;
 
     private Degree selectedDegree;
@@ -71,8 +72,8 @@ public class SelectDegreeActivity extends AppCompatActivity {
         regEmail = getIntent().getStringExtra(RegisterActivity.EXTRA_EMAIL);
         regPassword = getIntent().getStringExtra(RegisterActivity.EXTRA_PASSWORD);
 
-        degreeRepository = new DegreeRepository(this);
-        authRepository = new AuthRepository(this);
+        degreeRepository = new DegreeRepositoryImpl(this);
+        authRepository = new AuthRepositoryImpl(this);
         sessionManager = new SessionManager(this);
 
         recyclerView = findViewById(R.id.recycler_degrees);
@@ -116,7 +117,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
     private void loadDegrees() {
         loadingIndicator.setVisibility(View.VISIBLE);
         String university = sessionManager.getUniversity();
-        degreeRepository.fetchDegreesByUniversity(university, new DataCallback<List<Degree>>() {
+        degreeRepository.fetchDegreesByUniversity(university, new DataCallback<>() {
             @Override
             public void onSuccess(List<Degree> degrees) {
                 loadingIndicator.setVisibility(View.GONE);
@@ -142,8 +143,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
         List<Degree> filtered = new ArrayList<>();
         String lowerQuery = query.toLowerCase();
         for (Degree d : allDegrees) {
-            if (d.getName().toLowerCase().contains(lowerQuery) ||
-                    (d.getDescription() != null && d.getDescription().toLowerCase().contains(lowerQuery))) {
+            if (d.getName().toLowerCase().contains(lowerQuery)) {
                 filtered.add(d);
             }
         }
@@ -151,18 +151,14 @@ public class SelectDegreeActivity extends AppCompatActivity {
     }
 
     private void showAddDegreeDialog() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.Theme_BraveM_BottomSheetDialog);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_degree, null);
+        dialog.setContentView(dialogView);
+
         TextInputEditText editSchool = dialogView.findViewById(R.id.edit_school);
         TextInputEditText editDegreeName = dialogView.findViewById(R.id.edit_degree_name);
         TextInputEditText editIntake = dialogView.findViewById(R.id.edit_intake);
-        View btnCancel = dialogView.findViewById(R.id.btn_cancel);
         View btnSave = dialogView.findViewById(R.id.btn_save);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(dialogView)
-                .create();
-
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         btnSave.setOnClickListener(v -> {
             String school = editSchool.getText() != null ? editSchool.getText().toString().trim() : "";
@@ -182,9 +178,7 @@ public class SelectDegreeActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(Degree degree) {
                     selectedDegree = degree;
-                    // Reload the list so the new degree (and school header if new) appears
                     loadDegrees();
-                    // Proceed to confirm selection with the provided intake
                     confirmSelection(intake);
                 }
 
@@ -242,11 +236,10 @@ public class SelectDegreeActivity extends AppCompatActivity {
         if (selectedDegree == null) return;
 
         if (isBrowseMode) {
-            // If just browsing, go to degree papers for that degree and intake
             Intent intent = new Intent(this, com.bravem.app.ui.papers.DegreePapersActivity.class);
-            intent.putExtra(com.bravem.app.ui.papers.DegreePapersActivity.EXTRA_DEGREE_ID, selectedDegree.getId());
-            intent.putExtra(com.bravem.app.ui.papers.DegreePapersActivity.EXTRA_DEGREE_NAME, selectedDegree.getName());
-            intent.putExtra(com.bravem.app.ui.papers.DegreePapersActivity.EXTRA_INTAKE, intake);
+            intent.putExtra("extra_degree_id", selectedDegree.getId());
+            intent.putExtra("extra_degree_name", selectedDegree.getName());
+            intent.putExtra("extra_intake", intake);
             startActivity(intent);
             finish();
             return;
@@ -256,12 +249,11 @@ public class SelectDegreeActivity extends AppCompatActivity {
         loadingIndicator.setVisibility(View.VISIBLE);
 
         if (regEmail != null) {
-            // New Registration Flow
             authRepository.register(regName, regEmail, regPassword,
                     selectedDegree.getId(), selectedDegree.getName(), intake,
-                    new DataCallback<User>() {
+                    new DataCallback<>() {
                         @Override
-                        public void onSuccess(User user) {
+                        public void onSuccess(com.bravem.app.domain.model.User user) {
                             Intent intent = new Intent(SelectDegreeActivity.this, DashboardActivity.class);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(intent);
@@ -278,12 +270,11 @@ public class SelectDegreeActivity extends AppCompatActivity {
                         }
                     });
         } else {
-            // Re-selecting degree for existing user
             String uid = sessionManager.getUid();
             if (uid == null) return;
 
             authRepository.updateUserDegree(uid, selectedDegree.getId(), selectedDegree.getName(), intake,
-                    new DataCallback<Void>() {
+                    new DataCallback<>() {
                         @Override
                         public void onSuccess(Void result) {
                             startActivity(new Intent(SelectDegreeActivity.this, DashboardActivity.class));

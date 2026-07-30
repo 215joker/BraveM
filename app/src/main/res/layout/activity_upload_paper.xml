@@ -53,11 +53,15 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
+        android:id="@+id/upload_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:scrollbarStyle="outsideOverlay">
 
         <LinearLayout
+            android:id="@+id/upload_form_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -75,7 +79,7 @@
                 <ImageView
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:src="@drawable/ic_upload"
+                    android:src="@drawable/ic_document"
                     app:tint="@color/ink_700" />
 
                 <TextView
@@ -95,6 +99,51 @@
                     android:gravity="center"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="Answer Sheet / Memorandum (Optional)"
+                android:textColor="@color/ink_700"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/btn_pick_memo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dashed_upload"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_upload"
+                    app:tint="@color/text_hint" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Select Memo File"
+                    android:textColor="@color/text_hint"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/text_selected_memo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:textColor="@color/amber_700"
+                    android:textSize="11sp" />
 
             </LinearLayout>
 

@@ -17,10 +17,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bravem.app.R;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.DegreeRepository;
-import com.bravem.app.data.PaperRepository;
-import com.bravem.app.model.Course;
-import com.bravem.app.model.Degree;
+import com.bravem.app.data.DegreeRepositoryImpl;
+import com.bravem.app.data.PaperRepositoryImpl;
+import com.bravem.app.domain.model.Degree;
+import com.bravem.app.domain.repository.DegreeRepository;
+import com.bravem.app.domain.repository.PaperRepository;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
 import com.bravem.app.utils.SessionManager;
@@ -36,7 +37,9 @@ public class UploadPaperActivity extends AppCompatActivity {
 
     private View backButton;
     private View pickFileButton;
+    private View pickMemoButton;
     private TextView selectedFileText;
+    private TextView selectedMemoText;
     private TextInputEditText titleInput;
     private TextInputEditText universityInput;
     private AutoCompleteTextView degreeDropdown;
@@ -58,6 +61,10 @@ public class UploadPaperActivity extends AppCompatActivity {
     private String selectedFileName;
     private long selectedFileSize;
 
+    private Uri selectedMemoUri;
+    private String selectedMemoName;
+    private long selectedMemoSize;
+
     private List<Degree> degrees = new ArrayList<>();
     private Degree chosenDegree;
 
@@ -66,11 +73,15 @@ public class UploadPaperActivity extends AppCompatActivity {
     private static class QueuedPaper {
         Uri uri;
         String fileName;
+        Uri memoUri;
+        String memoName;
         PastPaper meta;
 
-        QueuedPaper(Uri uri, String fileName, PastPaper meta) {
+        QueuedPaper(Uri uri, String fileName, Uri memoUri, String memoName, PastPaper meta) {
             this.uri = uri;
             this.fileName = fileName;
+            this.memoUri = memoUri;
+            this.memoName = memoName;
             this.meta = meta;
         }
     }
@@ -85,6 +96,16 @@ public class UploadPaperActivity extends AppCompatActivity {
                 }
             });
 
+    private final ActivityResultLauncher<Intent> memoPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        handleMemoSelected(uri);
+                    }
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         UiUtils.applyEdgeToEdge(this);
@@ -92,15 +113,17 @@ public class UploadPaperActivity extends AppCompatActivity {
         setContentView(R.layout.activity_upload_paper);
 
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
-        UiUtils.handleBottomInset(findViewById(R.id.btn_submit_all));
+        UiUtils.handleBottomInset(findViewById(R.id.upload_form_container));
 
-        degreeRepository = new DegreeRepository(this);
-        paperRepository = new PaperRepository(this);
+        degreeRepository = new DegreeRepositoryImpl(this);
+        paperRepository = new PaperRepositoryImpl(this);
         sessionManager = new SessionManager(this);
 
         backButton = findViewById(R.id.btn_back);
         pickFileButton = findViewById(R.id.btn_pick_file);
+        pickMemoButton = findViewById(R.id.btn_pick_memo);
         selectedFileText = findViewById(R.id.text_selected_file);
+        selectedMemoText = findViewById(R.id.text_selected_memo);
         titleInput = findViewById(R.id.input_title);
         universityInput = findViewById(R.id.input_university);
         degreeDropdown = findViewById(R.id.dropdown_degree);
@@ -117,7 +140,8 @@ public class UploadPaperActivity extends AppCompatActivity {
         intakeInput.setText(sessionManager.getIntake());
 
         backButton.setOnClickListener(v -> finish());
-        pickFileButton.setOnClickListener(v -> launchFilePicker());
+        pickFileButton.setOnClickListener(v -> launchFilePicker(false));
+        pickMemoButton.setOnClickListener(v -> launchFilePicker(true));
         addBtn.setOnClickListener(v -> addToQueue());
         submitButton.setOnClickListener(v -> attemptUpload());
         submitAllBtn.setOnClickListener(v -> uploadQueue());
@@ -133,7 +157,7 @@ public class UploadPaperActivity extends AppCompatActivity {
     }
 
     private void loadDegrees() {
-        degreeRepository.fetchAllDegrees(new DataCallback<List<Degree>>() {
+        degreeRepository.fetchAllDegrees(new DataCallback<>() {
             @Override
             public void onSuccess(List<Degree> result) {
                 degrees = result;
@@ -167,7 +191,7 @@ public class UploadPaperActivity extends AppCompatActivity {
         });
     }
 
-    private void launchFilePicker() {
+    private void launchFilePicker(boolean isMemo) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
@@ -176,7 +200,11 @@ public class UploadPaperActivity extends AppCompatActivity {
                 "application/msword",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         });
-        filePickerLauncher.launch(Intent.createChooser(intent, getString(R.string.select_file)));
+        if (isMemo) {
+            memoPickerLauncher.launch(Intent.createChooser(intent, "Select Memorandum"));
+        } else {
+            filePickerLauncher.launch(Intent.createChooser(intent, getString(R.string.select_file)));
+        }
     }
 
     private void handleFileSelected(Uri uri) {
@@ -196,6 +224,14 @@ public class UploadPaperActivity extends AppCompatActivity {
         selectedFileText.setText(selectedFileName + " (" + FileUtils.humanReadableSize(selectedFileSize) + ")");
     }
 
+    private void handleMemoSelected(Uri uri) {
+        selectedMemoUri = uri;
+        selectedMemoName = FileUtils.getFileName(this, uri);
+        selectedMemoSize = FileUtils.getFileSize(this, uri);
+
+        selectedMemoText.setText(selectedMemoName + " (" + FileUtils.humanReadableSize(selectedMemoSize) + ")");
+    }
+
     private void addToQueue() {
         PastPaper paper = validateInputs();
         if (paper == null) return;
@@ -207,11 +243,10 @@ public class UploadPaperActivity extends AppCompatActivity {
             }
         }
 
-        paperQueue.add(new QueuedPaper(selectedFileUri, selectedFileName, paper));
+        paperQueue.add(new QueuedPaper(selectedFileUri, selectedFileName, selectedMemoUri, selectedMemoName, paper));
         updateQueueUI();
         clearFileAndTitle();
         
-        // Lock common fields
         universityInput.setEnabled(false);
         degreeDropdown.setEnabled(false);
         intakeInput.setEnabled(false);
@@ -242,6 +277,10 @@ public class UploadPaperActivity extends AppCompatActivity {
         selectedFileName = null;
         selectedFileSize = 0;
         selectedFileText.setText("");
+        selectedMemoUri = null;
+        selectedMemoName = null;
+        selectedMemoSize = 0;
+        selectedMemoText.setText("");
         titleInput.setText("");
     }
 
@@ -301,9 +340,9 @@ public class UploadPaperActivity extends AppCompatActivity {
 
         setUploading(true);
 
-        paperRepository.uploadPaper(selectedFileUri, selectedFileName, paper,
+        paperRepository.uploadPaper(selectedFileUri, selectedFileName, selectedMemoUri, selectedMemoName, paper,
                 percent -> runOnUiThread(() -> uploadProgress.setProgress(percent)),
-                new DataCallback<PastPaper>() {
+                new DataCallback<>() {
                     @Override
                     public void onSuccess(PastPaper result) {
                         setUploading(false);
@@ -337,12 +376,11 @@ public class UploadPaperActivity extends AppCompatActivity {
         }
 
         QueuedPaper next = paperQueue.get(0);
-        paperRepository.uploadPaper(next.uri, next.fileName, next.meta,
+        paperRepository.uploadPaper(next.uri, next.fileName, next.memoUri, next.memoName, next.meta,
                 percent -> {
-                    // Per-paper progress
                     runOnUiThread(() -> uploadProgress.setProgress(percent));
                 },
-                new DataCallback<PastPaper>() {
+                new DataCallback<>() {
                     @Override
                     public void onSuccess(PastPaper result) {
                         paperQueue.remove(0);

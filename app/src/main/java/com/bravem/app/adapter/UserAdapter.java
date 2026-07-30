@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
-import com.bravem.app.model.User;
+import com.bravem.app.domain.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,6 +94,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 roleBadge.setBackgroundTintList(null);
             }
             roleBadge.setText(roleText);
+            roleBadge.setOnLongClickListener(v -> {
+                String newRole = user.getRole().equals("admin") ? "student" : "admin";
+                listener.onRoleChange(user, newRole);
+                return true;
+            });
 
             deleteButton.setOnClickListener(v -> listener.onDelete(user));
             suspendButton.setOnClickListener(v -> listener.onSuspend(user));

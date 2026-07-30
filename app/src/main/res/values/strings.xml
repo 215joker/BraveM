@@ -123,6 +123,8 @@
     <string name="search_university_students">Search University Students</string>
     <string name="no_students_found">No students found.</string>
     <string name="friends">Friends</string>
+    <string name="my_university">My University</string>
+    <string name="all_universities">All Universities</string>
     <string name="search_results">Search Results</string>
     <string name="accept">Accept</string>
     <string name="friend_request_accepted">Friend request accepted</string>

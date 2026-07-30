@@ -7,6 +7,7 @@ import android.os.Looper;
 import com.bravem.app.data.local.AppDatabase;
 import com.bravem.app.data.local.FriendshipDao;
 import com.bravem.app.data.local.UserDao;
+import com.bravem.app.domain.model.UserMapper;
 import com.bravem.app.model.Friendship;
 import com.bravem.app.model.User;
 import com.bravem.app.utils.SessionManager;
@@ -42,15 +43,17 @@ public class CommunityRepository {
         friendshipsRef = FirebaseDatabase.getInstance().getReference("friendships");
     }
 
-    public void getFriends(DataCallback<List<User>> callback) {
-        syncFriendshipsFromFirebase(new DataCallback<Void>() {
+    public void getFriends(DataCallback<List<com.bravem.app.domain.model.User>> callback) {
+        syncFriendshipsFromFirebase(new DataCallback<>() {
             @Override
             public void onSuccess(Void result) {
                 String currentUserId = sessionManager.getUid();
                 executor.execute(() -> {
                     try {
                         List<User> friends = friendshipDao.getFriends(currentUserId);
-                        mainHandler.post(() -> callback.onSuccess(friends));
+                        List<com.bravem.app.domain.model.User> domainFriends = new ArrayList<>();
+                        for (User u : friends) domainFriends.add(UserMapper.toDomain(u));
+                        mainHandler.post(() -> callback.onSuccess(domainFriends));
                     } catch (Exception e) {
                         mainHandler.post(() -> callback.onError(e));
                     }
@@ -64,39 +67,69 @@ public class CommunityRepository {
         });
     }
 
-    public void getRecommendations(DataCallback<List<User>> callback) {
-        syncUsersByUniversity(sessionManager.getUniversity(), new DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void result) {
-                String university = sessionManager.getUniversity();
-                String currentUserId = sessionManager.getUid();
+    public void getRecommendations(boolean crossUniversity, DataCallback<List<com.bravem.app.domain.model.User>> callback) {
+        if (!crossUniversity) {
+            syncUsersByUniversity(sessionManager.getUniversity(), new DataCallback<>() {
+                @Override
+                public void onSuccess(Void result) {
+                    String university = sessionManager.getUniversity();
+                    String currentUserId = sessionManager.getUid();
 
-                executor.execute(() -> {
-                    try {
-                        List<User> users = userDao.getRecommendations(university, currentUserId);
-                        mainHandler.post(() -> callback.onSuccess(users));
-                    } catch (Exception e) {
-                        mainHandler.post(() -> callback.onError(e));
-                    }
-                });
-            }
+                    executor.execute(() -> {
+                        try {
+                            List<User> users = userDao.getRecommendations(university, currentUserId);
+                            List<com.bravem.app.domain.model.User> domainUsers = new ArrayList<>();
+                            for (User u : users) domainUsers.add(UserMapper.toDomain(u));
+                            mainHandler.post(() -> callback.onSuccess(domainUsers));
+                        } catch (Exception e) {
+                            mainHandler.post(() -> callback.onError(e));
+                        }
+                    });
+                }
 
-            @Override
-            public void onError(Exception e) {
-                callback.onError(e);
-            }
-        });
+                @Override
+                public void onError(Exception e) {
+                    callback.onError(e);
+                }
+            });
+        } else {
+            syncUsersByDegree(sessionManager.getDegreeName(), new DataCallback<>() {
+                @Override
+                public void onSuccess(Void result) {
+                    String degreeName = sessionManager.getDegreeName();
+                    String currentUserId = sessionManager.getUid();
+
+                    executor.execute(() -> {
+                        try {
+                            List<User> users = userDao.getRecommendationsByDegree(degreeName, currentUserId);
+                            List<com.bravem.app.domain.model.User> domainUsers = new ArrayList<>();
+                            for (User u : users) domainUsers.add(UserMapper.toDomain(u));
+                            mainHandler.post(() -> callback.onSuccess(domainUsers));
+                        } catch (Exception e) {
+                            mainHandler.post(() -> callback.onError(e));
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    callback.onError(e);
+                }
+            });
+        }
     }
 
-    public void searchStudents(String query, DataCallback<List<User>> callback) {
-        syncUsersByUniversity(sessionManager.getUniversity(), new DataCallback<Void>() {
+    public void searchStudents(String query, DataCallback<List<com.bravem.app.domain.model.User>> callback) {
+        syncUsersByUniversity(sessionManager.getUniversity(), new DataCallback<>() {
             @Override
             public void onSuccess(Void result) {
                 String currentUserId = sessionManager.getUid();
                 executor.execute(() -> {
                     try {
                         List<User> users = userDao.searchStudents(query, currentUserId);
-                        mainHandler.post(() -> callback.onSuccess(users));
+                        List<com.bravem.app.domain.model.User> domainUsers = new ArrayList<>();
+                        for (User u : users) domainUsers.add(UserMapper.toDomain(u));
+                        mainHandler.post(() -> callback.onSuccess(domainUsers));
                     } catch (Exception e) {
                         mainHandler.post(() -> callback.onError(e));
                     }
@@ -119,7 +152,6 @@ public class CommunityRepository {
         String currentUserName = sessionManager.getFullName();
         String friendshipId = Friendship.generateId(currentUserId, targetUserId);
 
-        // Check Firebase directly to avoid duplicate requests if local sync is delayed
         friendshipsRef.child(friendshipId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
@@ -143,16 +175,7 @@ public class CommunityRepository {
                         }
                     });
                 } else {
-                    // Check if it's already accepted or pending from other side
-                    Friendship existing = snapshot.getValue(Friendship.class);
-                    if (existing != null && Friendship.STATUS_PENDING.equals(existing.getStatus()) 
-                            && existing.getReceiverId().equals(currentUserId)) {
-                        // If they sent us a request, just accept it? 
-                        // For now, just return false as per current logic
-                        mainHandler.post(() -> callback.onSuccess(false));
-                    } else {
-                        mainHandler.post(() -> callback.onSuccess(false));
-                    }
+                    mainHandler.post(() -> callback.onSuccess(false));
                 }
             }
 
@@ -238,6 +261,33 @@ public class CommunityRepository {
             return;
         }
         usersRef.orderByChild("university").equalTo(university).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                executor.execute(() -> {
+                    for (DataSnapshot userSnapshot : snapshot.getChildren()) {
+                        User user = userSnapshot.getValue(User.class);
+                        if (user != null) {
+                            user.setSynced(true);
+                            userDao.insert(user);
+                        }
+                    }
+                    mainHandler.post(() -> callback.onSuccess(null));
+                });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                mainHandler.post(() -> callback.onError(error.toException()));
+            }
+        });
+    }
+
+    private void syncUsersByDegree(String degreeName, DataCallback<Void> callback) {
+        if (degreeName == null || degreeName.isEmpty()) {
+            callback.onSuccess(null);
+            return;
+        }
+        usersRef.orderByChild("degreeName").equalTo(degreeName).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 executor.execute(() -> {

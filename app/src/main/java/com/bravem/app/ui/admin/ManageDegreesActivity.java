@@ -16,8 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bravem.app.R;
 import com.bravem.app.adapter.DegreeAdapter;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.DegreeRepository;
-import com.bravem.app.model.Degree;
+import com.bravem.app.data.DegreeRepositoryImpl;
+import com.bravem.app.domain.model.Degree;
+import com.bravem.app.domain.repository.DegreeRepository;
 import com.bravem.app.utils.UiUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
@@ -45,7 +46,7 @@ public class ManageDegreesActivity extends AppCompatActivity {
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleFabBottomInset(findViewById(R.id.fab_add), 24);
 
-        degreeRepository = new DegreeRepository(this);
+        degreeRepository = new DegreeRepositoryImpl(this);
 
         recyclerView = findViewById(R.id.recycler_list);
         progressIndicator = findViewById(R.id.progress_indicator);
@@ -91,7 +92,7 @@ public class ManageDegreesActivity extends AppCompatActivity {
 
     private void loadDegrees() {
         progressIndicator.setVisibility(View.VISIBLE);
-        degreeRepository.fetchAllDegrees(new DataCallback<List<Degree>>() {
+        degreeRepository.fetchAllDegrees(new DataCallback<>() {
             @Override
             public void onSuccess(List<Degree> degrees) {
                 progressIndicator.setVisibility(View.GONE);
@@ -108,37 +109,44 @@ public class ManageDegreesActivity extends AppCompatActivity {
     }
 
     private void showDegreeDialog(Degree existing) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.Theme_BraveM_BottomSheetDialog);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_degree, null);
-        EditText nameInput = dialogView.findViewById(R.id.input_name);
-        EditText uniInput = dialogView.findViewById(R.id.input_university);
+        dialog.setContentView(dialogView);
+
+        android.widget.EditText nameInput = dialogView.findViewById(R.id.input_name);
+        android.widget.EditText uniInput = dialogView.findViewById(R.id.input_university);
+        android.widget.TextView titleView = dialogView.findViewById(R.id.text_dialog_title);
+        View btnSave = dialogView.findViewById(R.id.btn_save);
+
+        if (titleView != null) {
+            titleView.setText(existing == null ? R.string.add_degree : R.string.edit);
+        }
 
         if (existing != null) {
             nameInput.setText(existing.getName());
             uniInput.setText(existing.getUniversity());
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle(existing == null ? R.string.add_degree : R.string.edit)
-                .setView(dialogView)
-                .setPositiveButton(R.string.save, (dialog, which) -> {
-                    String name = nameInput.getText().toString().trim();
-                    String university = uniInput.getText().toString().trim();
-                    if (name.isEmpty() || university.isEmpty()) {
-                        Toast.makeText(this, R.string.error_required_field, Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    if (existing == null) {
-                        createDegree(name, "", university);
-                    } else {
-                        updateDegree(existing.getId(), name, "", university);
-                    }
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+        btnSave.setOnClickListener(v -> {
+            String name = nameInput.getText().toString().trim();
+            String university = uniInput.getText().toString().trim();
+            if (name.isEmpty() || university.isEmpty()) {
+                Toast.makeText(this, R.string.error_required_field, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (existing == null) {
+                createDegree(name, "", university);
+            } else {
+                updateDegree(existing.getId(), name, "", university);
+            }
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private void createDegree(String name, String description, String university) {
-        degreeRepository.addDegree(name, description, university, new DataCallback<Degree>() {
+        degreeRepository.addDegree(name, description, university, new DataCallback<>() {
             @Override
             public void onSuccess(Degree result) {
                 loadDegrees();
@@ -152,7 +160,7 @@ public class ManageDegreesActivity extends AppCompatActivity {
     }
 
     private void updateDegree(String id, String name, String description, String university) {
-        degreeRepository.updateDegree(id, name, description, university, new DataCallback<Void>() {
+        degreeRepository.updateDegree(id, name, description, university, new DataCallback<>() {
             @Override
             public void onSuccess(Void result) {
                 loadDegrees();
@@ -166,22 +174,20 @@ public class ManageDegreesActivity extends AppCompatActivity {
     }
 
     private void confirmDelete(Degree degree) {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.confirm_delete_title)
-                .setMessage(R.string.confirm_delete_message)
-                .setPositiveButton(R.string.delete, (dialog, which) ->
-                        degreeRepository.deleteDegree(degree.getId(), new DataCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void result) {
-                                loadDegrees();
-                            }
+        com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                getString(R.string.confirm_delete_title),
+                getString(R.string.confirm_delete_message),
+                getString(R.string.delete),
+                () -> degreeRepository.deleteDegree(degree.getId(), new DataCallback<>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        loadDegrees();
+                    }
 
-                            @Override
-                            public void onError(Exception e) {
-                                Toast.makeText(ManageDegreesActivity.this, R.string.error_generic, Toast.LENGTH_SHORT).show();
-                            }
-                        }))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(ManageDegreesActivity.this, R.string.error_generic, Toast.LENGTH_SHORT).show();
+                    }
+                }));
     }
 }

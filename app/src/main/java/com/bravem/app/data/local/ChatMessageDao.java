@@ -31,4 +31,10 @@ public interface ChatMessageDao {
 
     @Query("SELECT COUNT(*) FROM chat_messages WHERE senderId = :senderId AND receiverId = :receiverId AND isRead = 0")
     int getUnreadCountFromUser(String senderId, String receiverId);
+
+    @Query("SELECT * FROM chat_messages WHERE groupId = :groupId ORDER BY timestamp ASC")
+    List<ChatMessage> getGroupChatHistory(String groupId);
+
+    @Query("UPDATE chat_messages SET isRead = 1 WHERE groupId = :groupId")
+    void markGroupAsRead(String groupId);
 }

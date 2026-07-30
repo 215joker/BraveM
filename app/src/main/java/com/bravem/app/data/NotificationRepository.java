@@ -72,6 +72,9 @@ public class NotificationRepository {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 executor.execute(() -> {
+                    // Clear local notifs that are no longer in Firebase for this user
+                    notificationDao.deleteAll(userId);
+
                     for (DataSnapshot notifSnapshot : snapshot.getChildren()) {
                         Notification notification = notifSnapshot.getValue(Notification.class);
                         if (notification != null) {
@@ -113,9 +116,16 @@ public class NotificationRepository {
     }
 
     public void deleteNotification(Notification notification, DataCallback<Void> callback) {
+        // Optimistically delete locally first
         executor.execute(() -> {
             notificationDao.delete(notification);
-            if (callback != null) mainHandler.post(() -> callback.onSuccess(null));
+            mainHandler.post(() -> {
+                if (callback != null) callback.onSuccess(null);
+            });
+            
+            // Then delete from Firebase in the background
+            String userId = sessionManager.getUid();
+            notificationsRef.child(userId).child(notification.getId()).removeValue();
         });
     }
 }

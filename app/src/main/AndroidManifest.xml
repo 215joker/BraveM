@@ -10,6 +10,14 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
         android:name=".BraveMApp"
@@ -46,7 +54,9 @@
         <activity android:name=".ui.papers.PaperViewerActivity" android:exported="false" />
         <activity android:name=".ui.papers.SearchActivity" android:exported="false" />
 
-        <activity android:name=".ui.upload.UploadPaperActivity" android:exported="false" />
+        <activity android:name=".ui.upload.UploadPaperActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".ui.admin.AdminDashboardActivity" android:exported="false" />
         <activity android:name=".ui.admin.ManageDegreesActivity" android:exported="false" />
@@ -59,10 +69,16 @@
         <activity android:name=".ui.admin.DeletedUsersActivity" android:exported="false" />
         <activity android:name=".ui.admin.AdminChatListActivity" android:exported="false" />
 
-        <activity android:name=".ui.dashboard.ProfileActivity" android:exported="false" />
-        <activity android:name=".ui.dashboard.NotificationActivity" android:exported="false" />
+        <activity android:name=".ui.profile.ProfileActivity" android:exported="false" />
+        <activity android:name=".ui.notifications.NotificationActivity" android:exported="false" />
         <activity android:name=".ui.community.CommunityActivity" android:exported="false" />
-        <activity android:name=".ui.community.ChatActivity" android:exported="false" />
+        <activity android:name=".ui.community.ChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.community.GroupChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.community.StudyRoomActivity" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

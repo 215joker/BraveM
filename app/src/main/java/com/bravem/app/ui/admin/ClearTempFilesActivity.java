@@ -65,17 +65,16 @@ public class ClearTempFilesActivity extends AppCompatActivity {
 
     private void confirmDeleteSelected() {
         Set<File> selected = adapter.getSelectedFiles();
-        new AlertDialog.Builder(this)
-                .setTitle("Delete " + selected.size() + " files?")
-                .setMessage("This action cannot be undone.")
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
+        com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                "Delete " + selected.size() + " files?",
+                "This action cannot be undone.",
+                getString(R.string.delete),
+                () -> {
                     for (File f : selected) {
                         f.delete();
                     }
                     Toast.makeText(this, "Files deleted", Toast.LENGTH_SHORT).show();
                     loadFiles();
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                });
     }
 }

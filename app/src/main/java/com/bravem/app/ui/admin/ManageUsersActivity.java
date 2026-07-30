@@ -9,25 +9,21 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.adapter.UserAdapter;
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.model.User;
+import com.bravem.app.domain.model.User;
+import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.utils.UiUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +38,9 @@ public class ManageUsersActivity extends AppCompatActivity {
     private FloatingActionButton fabAddAdmin;
     private EditText etSearch;
 
-    private AuthRepository authRepository;
+    private UserRepository userRepository;
     private List<User> allUsers = new ArrayList<>();
-    private String currentTab = User.ROLE_STUDENT;
+    private String currentTab = "student";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +51,7 @@ public class ManageUsersActivity extends AppCompatActivity {
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleFabBottomInset(findViewById(R.id.fab_add_admin), 24);
 
-        authRepository = new AuthRepository(this);
+        userRepository = new AuthRepositoryImpl(this);
         initViews();
         loadUsers();
     }
@@ -73,12 +69,12 @@ public class ManageUsersActivity extends AppCompatActivity {
 
         adapter = new UserAdapter(new UserAdapter.OnUserActionListener() {
             @Override
-            public void onDelete(User user) {
+            public void onDelete(com.bravem.app.domain.model.User user) {
                 confirmMarkDeletion(user);
             }
 
             @Override
-            public void onSuspend(User user) {
+            public void onSuspend(com.bravem.app.domain.model.User user) {
                 if (user.isSuspended()) {
                     restoreUser(user);
                 } else {
@@ -87,8 +83,8 @@ public class ManageUsersActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onRoleChange(User user, String newRole) {
-                authRepository.updateUserRole(user.getUid(), newRole, new DataCallback<Void>() {
+            public void onRoleChange(com.bravem.app.domain.model.User user, String newRole) {
+                userRepository.updateUserRole(user.getUid(), newRole, new DataCallback<>() {
                     @Override
                     public void onSuccess(Void result) {
                         loadUsers();
@@ -108,7 +104,7 @@ public class ManageUsersActivity extends AppCompatActivity {
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                currentTab = tab.getPosition() == 0 ? User.ROLE_STUDENT : User.ROLE_ADMIN;
+                currentTab = tab.getPosition() == 0 ? "student" : "admin";
                 fabAddAdmin.setVisibility(tab.getPosition() == 1 ? View.VISIBLE : View.GONE);
                 filterUsers();
             }
@@ -138,7 +134,7 @@ public class ManageUsersActivity extends AppCompatActivity {
 
     private void loadUsers() {
         progressIndicator.setVisibility(View.VISIBLE);
-        authRepository.fetchAllUsers(new DataCallback<List<User>>() {
+        userRepository.fetchAllUsers(new DataCallback<>() {
             @Override
             public void onSuccess(List<User> result) {
                 progressIndicator.setVisibility(View.GONE);
@@ -157,7 +153,7 @@ public class ManageUsersActivity extends AppCompatActivity {
     private void filterUsers() {
         List<User> filtered = new ArrayList<>();
         for (User u : allUsers) {
-            if (u.getRole().equals(currentTab) && !u.isDeletionRequested()) {
+            if (u.getRole().equalsIgnoreCase(currentTab)) {
                 filtered.add(u);
             }
         }
@@ -166,11 +162,12 @@ public class ManageUsersActivity extends AppCompatActivity {
     }
 
     private void confirmMarkDeletion(User user) {
-        new AlertDialog.Builder(this)
-                .setTitle("Mark for Deletion")
-                .setMessage("Mark " + user.getFullName() + " for deletion? They will be removed in 30 days.")
-                .setPositiveButton("Mark", (dialog, which) -> {
-                    authRepository.markUserForDeletion(user, new DataCallback<Void>() {
+        com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                "Mark for Deletion",
+                "Mark " + user.getFullName() + " for deletion? They will be removed in 30 days.",
+                "Mark",
+                () -> {
+                    userRepository.markUserForDeletion(user, new DataCallback<>() {
                         @Override
                         public void onSuccess(Void result) {
                             Toast.makeText(ManageUsersActivity.this, "User marked for deletion", Toast.LENGTH_SHORT).show();
@@ -182,18 +179,17 @@ public class ManageUsersActivity extends AppCompatActivity {
                             Toast.makeText(ManageUsersActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                });
     }
 
     private void showSuspendDialog(User user) {
-        new AlertDialog.Builder(this)
-                .setTitle("Suspend User")
-                .setMessage("Suspend " + user.getFullName() + " for 14 days?")
-                .setPositiveButton("Suspend", (dialog, which) -> {
+        com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                "Suspend User",
+                "Suspend " + user.getFullName() + " for 14 days?",
+                "Suspend",
+                () -> {
                     long duration = 14L * 24 * 60 * 60 * 1000;
-                    authRepository.suspendUser(user, duration, new DataCallback<Void>() {
+                    userRepository.suspendUser(user, duration, new DataCallback<>() {
                         @Override
                         public void onSuccess(Void result) {
                             Toast.makeText(ManageUsersActivity.this, "User suspended", Toast.LENGTH_SHORT).show();
@@ -205,13 +201,11 @@ public class ManageUsersActivity extends AppCompatActivity {
                             Toast.makeText(ManageUsersActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                });
     }
 
     private void restoreUser(User user) {
-        authRepository.restoreUser(user, new DataCallback<Void>() {
+        userRepository.restoreUser(user, new DataCallback<>() {
             @Override
             public void onSuccess(Void result) {
                 Toast.makeText(ManageUsersActivity.this, "User restored", Toast.LENGTH_SHORT).show();
@@ -226,44 +220,45 @@ public class ManageUsersActivity extends AppCompatActivity {
     }
 
     private void showAddAdminDialog() {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.Theme_BraveM_BottomSheetDialog);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_admin, null);
-        EditText nameInput = dialogView.findViewById(R.id.input_name);
-        EditText emailInput = dialogView.findViewById(R.id.input_email);
-        EditText passwordInput = dialogView.findViewById(R.id.input_password);
+        dialog.setContentView(dialogView);
 
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.add_admin)
-                .setView(dialogView)
-                .setPositiveButton(R.string.add, (dialog, which) -> {
-                    String name = nameInput.getText().toString().trim();
-                    String email = emailInput.getText().toString().trim();
-                    String pass = passwordInput.getText().toString().trim();
+        android.widget.EditText nameInput = dialogView.findViewById(R.id.input_name);
+        android.widget.EditText emailInput = dialogView.findViewById(R.id.input_email);
+        android.widget.EditText passwordInput = dialogView.findViewById(R.id.input_password);
+        View btnSave = dialogView.findViewById(R.id.btn_save);
 
-                    if (name.isEmpty() || email.isEmpty() || pass.isEmpty()) {
-                        Toast.makeText(this, "All fields required", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+        btnSave.setOnClickListener(v -> {
+            String name = nameInput.getText().toString().trim();
+            String email = emailInput.getText().toString().trim();
+            String pass = passwordInput.getText().toString().trim();
 
-                    // This is simplified, usually register would handle role or there's a specific admin creation
-                    authRepository.register(name, email, pass, new DataCallback<User>() {
+            if (name.isEmpty() || email.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(this, "All fields required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            userRepository.register(name, email, pass, new DataCallback<>() {
+                @Override
+                public void onSuccess(User result) {
+                    userRepository.updateUserRole(result.getUid(), "admin", new DataCallback<>() {
                         @Override
-                        public void onSuccess(User result) {
-                            authRepository.updateUserRole(result.getUid(), User.ROLE_ADMIN, new DataCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void res) {
-                                    loadUsers();
-                                }
-                                @Override
-                                public void onError(Exception e) {}
-                            });
+                        public void onSuccess(Void res) {
+                            loadUsers();
                         }
                         @Override
-                        public void onError(Exception e) {
-                            Toast.makeText(ManageUsersActivity.this, "Failed to add admin", Toast.LENGTH_SHORT).show();
-                        }
+                        public void onError(Exception e) {}
                     });
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                }
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(ManageUsersActivity.this, "Failed to add admin: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 }

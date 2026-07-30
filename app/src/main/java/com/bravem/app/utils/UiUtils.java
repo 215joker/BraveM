@@ -24,9 +24,12 @@ public class UiUtils {
     }
 
     public static void handleBottomInset(View view) {
+        final int initialBottom = view.getPaddingBottom();
         ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), systemBars.bottom);
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int bottomInset = Math.max(systemBars.bottom, ime.bottom);
+            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), initialBottom + bottomInset);
             return insets;
         });
     }

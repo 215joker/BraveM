@@ -13,8 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.DegreeRepository;
-import com.bravem.app.model.Degree;
+import com.bravem.app.domain.model.Degree;
+import com.bravem.app.domain.repository.DegreeRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,7 +99,7 @@ public class UniversityAdapter extends RecyclerView.Adapter<UniversityAdapter.Un
                 if (pos == RecyclerView.NO_POSITION) return;
 
                 if (newState && !cachedDegrees.containsKey(university)) {
-                    degreeRepository.fetchDegreesByUniversity(university, new DataCallback<List<Degree>>() {
+                    degreeRepository.fetchDegreesByUniversity(university, new DataCallback<>() {
                         @Override
                         public void onSuccess(List<Degree> result) {
                             cachedDegrees.put(university, result);

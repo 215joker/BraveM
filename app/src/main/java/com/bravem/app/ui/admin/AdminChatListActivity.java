@@ -14,10 +14,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.adapter.RecentChatAdapter;
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.ChatRepository;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.model.User;
+import com.bravem.app.domain.model.User;
+import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.ui.community.ChatActivity;
 import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
@@ -34,7 +35,7 @@ public class AdminChatListActivity extends AppCompatActivity {
     private View emptyState;
     private CircularProgressIndicator progressIndicator;
     private ChatRepository chatRepository;
-    private AuthRepository authRepository;
+    private UserRepository userRepository;
     private EditText etSearch;
     private List<ChatRepository.RecentChat> allChats;
     private List<User> allStudents;
@@ -49,7 +50,7 @@ public class AdminChatListActivity extends AppCompatActivity {
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
 
         chatRepository = new ChatRepository(this);
-        authRepository = new AuthRepository(this);
+        userRepository = new AuthRepositoryImpl(this);
 
         initViews();
         loadChats();
@@ -80,7 +81,8 @@ public class AdminChatListActivity extends AppCompatActivity {
         adapter = new RecentChatAdapter(user -> {
             if (user != null) {
                 Intent intent = new Intent(this, ChatActivity.class);
-                intent.putExtra(ChatActivity.EXTRA_USER, user);
+                // ChatActivity might need updating to accept domain User
+                intent.putExtra(ChatActivity.EXTRA_USER, (java.io.Serializable) user);
                 startActivity(intent);
             } else {
                 Toast.makeText(this, "User data is missing", Toast.LENGTH_SHORT).show();
@@ -110,12 +112,13 @@ public class AdminChatListActivity extends AppCompatActivity {
     }
 
     private void loadStudents() {
-        authRepository.fetchAllUsers(new DataCallback<List<User>>() {
+        userRepository.fetchAllUsers(new DataCallback<List<User>>() {
             @Override
             public void onSuccess(List<User> result) {
                 allStudents = new ArrayList<>();
                 for (User u : result) {
-                    if (User.ROLE_STUDENT.equals(u.getRole())) {
+                    // Check role - assuming domain User has getRole()
+                    if ("student".equalsIgnoreCase(u.getRole())) {
                         allStudents.add(u);
                     }
                 }

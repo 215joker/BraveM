@@ -16,8 +16,8 @@ import com.bravem.app.R;
 import com.bravem.app.adapter.MessageAdapter;
 import com.bravem.app.data.ChatRepository;
 import com.bravem.app.data.DataCallback;
+import com.bravem.app.domain.model.User;
 import com.bravem.app.model.ChatMessage;
-import com.bravem.app.model.User;
 import com.bravem.app.utils.SessionManager;
 import com.bravem.app.utils.UiUtils;
 
@@ -42,7 +42,7 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         setContentView(R.layout.activity_chat);
 
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
-        UiUtils.handleBottomInset(findViewById(android.R.id.content));
+        UiUtils.handleBottomInset(findViewById(R.id.chat_root));
 
         otherUser = (User) getIntent().getSerializableExtra(EXTRA_USER);
         if (otherUser == null) {
@@ -65,7 +65,18 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
+        recyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (bottom < oldBottom) {
+                recyclerView.postDelayed(() -> {
+                    if (adapter.getItemCount() > 0) {
+                        recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                    }
+                }, 100);
+            }
+        });
+
         findViewById(R.id.btn_send).setOnClickListener(v -> sendMessage());
+        findViewById(R.id.btn_video_call).setOnClickListener(v -> startVideoCall());
         
         filePickerLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), this::handleFileSelected);
         findViewById(R.id.btn_attach).setOnClickListener(v -> filePickerLauncher.launch("*/*"));
@@ -120,6 +131,19 @@ public class ChatActivity extends AppCompatActivity implements MessageAdapter.On
                 Toast.makeText(ChatActivity.this, "Failed to send message", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void startVideoCall() {
+        android.content.Intent intent = new android.content.Intent(this, StudyRoomActivity.class);
+        String channelId = getChatId(sessionManager.getUid(), otherUser.getUid());
+        intent.putExtra(StudyRoomActivity.EXTRA_CHANNEL_ID, channelId);
+        intent.putExtra(StudyRoomActivity.EXTRA_USER, otherUser);
+        startActivity(intent);
+    }
+
+    private String getChatId(String u1, String u2) {
+        if (u1 == null || u2 == null) return "unknown_chat";
+        return u1.compareTo(u2) < 0 ? u1 + "_" + u2 : u2 + "_" + u1;
     }
 
     private void handleFileSelected(Uri uri) {

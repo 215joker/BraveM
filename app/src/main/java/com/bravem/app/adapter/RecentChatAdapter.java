@@ -13,8 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.data.ChatRepository;
+import com.bravem.app.domain.model.User;
 import com.bravem.app.model.ChatMessage;
-import com.bravem.app.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,6 +72,7 @@ public class RecentChatAdapter extends RecyclerView.Adapter<RecentChatAdapter.Vi
 
         public void bind(ChatRepository.RecentChat chat, OnChatClickListener listener) {
             User user = chat.user;
+            if (user == null) return;
             ChatMessage lastMsg = chat.lastMessage;
 
             textName.setText(user.getFullName());

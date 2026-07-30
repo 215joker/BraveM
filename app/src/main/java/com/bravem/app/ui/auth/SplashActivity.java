@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,12 +12,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.model.User;
+import com.bravem.app.domain.model.User;
+import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.ui.admin.AdminDashboardActivity;
 import com.bravem.app.ui.dashboard.DashboardActivity;
-import com.bravem.app.ui.auth.SelectUniversityActivity;
 import com.bravem.app.utils.SessionManager;
 
 /**
@@ -26,7 +27,7 @@ public class SplashActivity extends AppCompatActivity {
 
     private static final long SPLASH_DELAY_MS = 700;
 
-    private AuthRepository authRepository;
+    private UserRepository userRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,13 +35,14 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(com.bravem.app.R.layout.activity_splash);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
+        View root = findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        authRepository = new AuthRepository(this);
+        userRepository = new AuthRepositoryImpl(this);
 
         new Handler(Looper.getMainLooper()).postDelayed(this::route, SPLASH_DELAY_MS);
     }
@@ -48,13 +50,11 @@ public class SplashActivity extends AppCompatActivity {
     private void route() {
         SessionManager session = new SessionManager(this);
 
-        // Firebase Test Lab Automation: Auto-login for Robo crawler if flag present
+        // Firebase Test Lab Automation
         if (getIntent().getBooleanExtra("FIREBASE_TEST_LAB", false)) {
-            authRepository.login("test@bravem.com", "password123", new DataCallback<User>() {
+            userRepository.login("test@bravem.com", "password123", new DataCallback<>() {
                 @Override
                 public void onSuccess(User user) {
-                    session.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
-                            user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
                     routeBasedOnSession(session);
                 }
 
@@ -66,21 +66,18 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
 
-        if (!authRepository.isLoggedIn()) {
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
+        if (!userRepository.isUserLoggedIn()) {
+            goToLogin();
             return;
         }
 
-        authRepository.fetchCurrentUserProfile(new DataCallback<User>() {
+        userRepository.getCurrentUser(new DataCallback<>() {
             @Override
             public void onSuccess(User user) {
                 if (user == null) {
                     goToLogin();
                     return;
                 }
-                session.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
-                        user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
                 routeBasedOnSession(session);
             }
 
@@ -92,9 +89,11 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void routeBasedOnSession(SessionManager session) {
-        if (session.isAdmin()) {
+        // check session
+        String role = session.getRole();
+        if ("admin".equalsIgnoreCase(role)) {
             startActivity(new Intent(this, AdminDashboardActivity.class));
-        } else if (!session.hasSelectedDegree()) {
+        } else if (session.getDegreeId() == null || session.getDegreeId().isEmpty()) {
             startActivity(new Intent(this, SelectDegreeActivity.class));
         } else {
             startActivity(new Intent(this, DashboardActivity.class));

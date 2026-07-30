@@ -97,6 +97,7 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
         private final TextView titleView;
         private final TextView metaView;
         private final TextView fileTypeBadge;
+        private final TextView memoBadge;
         private final ImageView downloadButton;
         private final ImageView pinButton;
         private final View adminBar;
@@ -108,6 +109,7 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
             titleView = itemView.findViewById(R.id.text_paper_title);
             metaView = itemView.findViewById(R.id.text_paper_meta);
             fileTypeBadge = itemView.findViewById(R.id.badge_file_type);
+            memoBadge = itemView.findViewById(R.id.badge_memo);
             downloadButton = itemView.findViewById(R.id.btn_download);
             pinButton = itemView.findViewById(R.id.btn_pin);
             adminBar = itemView.findViewById(R.id.layout_admin_bar);
@@ -127,6 +129,10 @@ public class PastPaperAdapter extends RecyclerView.Adapter<PastPaperAdapter.Pape
             metaView.setText(meta);
 
             fileTypeBadge.setText(PastPaper.TYPE_PDF.equals(paper.getFileType()) ? "PDF" : "DOCX");
+
+            if (memoBadge != null) {
+                memoBadge.setVisibility(paper.getMemoUrl() != null ? View.VISIBLE : View.GONE);
+            }
 
             itemView.setOnClickListener(v -> actionListener.onPaperClick(paper));
             downloadButton.setOnClickListener(v -> actionListener.onDownloadClick(paper));

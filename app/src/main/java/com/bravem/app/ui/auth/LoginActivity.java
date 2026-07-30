@@ -8,157 +8,143 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bravem.app.R;
-import com.bravem.app.data.AuthRepository;
-import com.bravem.app.data.DataCallback;
-import com.bravem.app.model.User;
+import com.bravem.app.databinding.ActivityLoginBinding;
+import com.bravem.app.domain.model.User;
 import com.bravem.app.ui.admin.AdminDashboardActivity;
 import com.bravem.app.ui.dashboard.DashboardActivity;
+import com.bravem.app.utils.Resource;
 import com.bravem.app.utils.SessionManager;
 import com.bravem.app.utils.UiUtils;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private TextInputLayout emailLayout, passwordLayout;
-    private TextInputEditText emailInput, passwordInput, universityInput;
-    private MaterialButton loginButton;
-    private View registerLink;
-    private CircularProgressIndicator progressIndicator;
-
-    private AuthRepository authRepository;
+    private ActivityLoginBinding binding;
+    private AuthViewModel viewModel;
     private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+        binding = ActivityLoginBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        View root = findViewById(android.R.id.content);
-        UiUtils.handleTopInset(root);
-        UiUtils.handleBottomInset(root);
+        UiUtils.handleTopInset(binding.getRoot());
+        UiUtils.handleBottomInset(binding.getRoot());
 
-        authRepository = new AuthRepository(this);
+        viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
         sessionManager = new SessionManager(this);
 
-        emailLayout = findViewById(R.id.layout_email);
-        passwordLayout = findViewById(R.id.layout_password);
-        emailInput = findViewById(R.id.input_email);
-        passwordInput = findViewById(R.id.input_password);
-        universityInput = findViewById(R.id.input_university);
-        loginButton = findViewById(R.id.btn_login);
-        registerLink = findViewById(R.id.link_register);
-        progressIndicator = findViewById(R.id.progress_indicator);
-
-        // Pre-populate university
-        if (universityInput != null) {
-            universityInput.setText(sessionManager.getUniversity());
-            universityInput.setOnClickListener(v -> {
-                Intent intent = new Intent(this, SelectUniversityActivity.class);
-                intent.putExtra("from_login", true);
-                startActivity(intent);
-            });
-        }
-
-        loginButton.setOnClickListener(v -> attemptLogin());
-        registerLink.setOnClickListener(v ->
-                startActivity(new Intent(this, RegisterActivity.class)));
-
-        findViewById(R.id.btn_forgot_password).setOnClickListener(v -> handleForgotPassword());
-
-        findViewById(R.id.btn_google).setOnClickListener(v -> handleSocialLogin("Google"));
-        findViewById(R.id.btn_facebook).setOnClickListener(v -> handleSocialLogin("Facebook"));
-        findViewById(R.id.btn_instagram).setOnClickListener(v -> handleSocialLogin("Instagram"));
-        findViewById(R.id.btn_github).setOnClickListener(v -> handleSocialLogin("GitHub"));
+        setupUI();
+        observeViewModel();
     }
 
-    private void handleForgotPassword() {
-        String email = emailInput.getText() != null ? emailInput.getText().toString().trim() : "";
-        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailLayout.setError(getString(R.string.error_invalid_email));
-            return;
-        }
+    private void setupUI() {
+        // Pre-populate university
+        binding.inputUniversity.setText(sessionManager.getUniversity());
+        binding.inputUniversity.setOnClickListener(v -> {
+            Intent intent = new Intent(this, SelectUniversityActivity.class);
+            intent.putExtra("from_login", true);
+            startActivity(intent);
+        });
 
-        setLoading(true);
-        authRepository.forgotPassword(email, new DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void result) {
-                setLoading(false);
-                Toast.makeText(LoginActivity.this, 
-                        getString(R.string.password_reset_sent, email), 
-                        Toast.LENGTH_LONG).show();
+        binding.btnLogin.setOnClickListener(v -> attemptLogin());
+        binding.linkRegister.setOnClickListener(v ->
+                startActivity(new Intent(this, RegisterActivity.class)));
+
+        binding.btnForgotPassword.setOnClickListener(v -> handleForgotPassword());
+
+        binding.btnGoogle.setOnClickListener(v -> handleSocialLogin("Google"));
+        binding.btnFacebook.setOnClickListener(v -> handleSocialLogin("Facebook"));
+        binding.btnInstagram.setOnClickListener(v -> handleSocialLogin("Instagram"));
+        binding.btnGithub.setOnClickListener(v -> handleSocialLogin("GitHub"));
+    }
+
+    private void observeViewModel() {
+        viewModel.getLoginState().observe(this, resource -> {
+            if (resource == null) return;
+            switch (resource.status) {
+                case LOADING:
+                    setLoading(true);
+                    break;
+                case SUCCESS:
+                    setLoading(false);
+                    routeUser(resource.data);
+                    break;
+                case ERROR:
+                    setLoading(false);
+                    Toast.makeText(this, resource.message, Toast.LENGTH_LONG).show();
+                    break;
             }
+        });
 
-            @Override
-            public void onError(Exception e) {
-                setLoading(false);
-                Toast.makeText(LoginActivity.this, 
-                        e.getMessage() != null ? e.getMessage() : getString(R.string.error_generic), 
-                        Toast.LENGTH_LONG).show();
+        viewModel.getResetPasswordState().observe(this, resource -> {
+            if (resource == null) return;
+            switch (resource.status) {
+                case LOADING:
+                    setLoading(true);
+                    break;
+                case SUCCESS:
+                    setLoading(false);
+                    Toast.makeText(this, R.string.password_reset_sent, Toast.LENGTH_LONG).show();
+                    break;
+                case ERROR:
+                    setLoading(false);
+                    Toast.makeText(this, resource.message, Toast.LENGTH_LONG).show();
+                    break;
             }
         });
     }
 
+    private void handleForgotPassword() {
+        String email = binding.inputEmail.getText() != null ? binding.inputEmail.getText().toString().trim() : "";
+        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.layoutEmail.setError(getString(R.string.error_invalid_email));
+            return;
+        }
+        viewModel.forgotPassword(email);
+    }
+
     private void handleSocialLogin(String provider) {
         Toast.makeText(this, provider + " login coming soon. Configure API keys first.", Toast.LENGTH_SHORT).show();
-        // TODO: Implement Social Login with Firebase
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (universityInput != null) {
-            universityInput.setText(sessionManager.getUniversity());
-        }
+        binding.inputUniversity.setText(sessionManager.getUniversity());
     }
 
     private void attemptLogin() {
-        String email = emailInput.getText() != null ? emailInput.getText().toString().trim() : "";
-        String password = passwordInput.getText() != null ? passwordInput.getText().toString().trim() : "";
+        String email = binding.inputEmail.getText() != null ? binding.inputEmail.getText().toString().trim() : "";
+        String password = binding.inputPassword.getText() != null ? binding.inputPassword.getText().toString().trim() : "";
 
-        emailLayout.setError(null);
-        passwordLayout.setError(null);
+        binding.layoutEmail.setError(null);
+        binding.layoutPassword.setError(null);
 
         boolean valid = true;
         if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailLayout.setError(getString(R.string.error_invalid_email));
+            binding.layoutEmail.setError(getString(R.string.error_invalid_email));
             valid = false;
         }
         if (TextUtils.isEmpty(password)) {
-            passwordLayout.setError(getString(R.string.error_required_field));
+            binding.layoutPassword.setError(getString(R.string.error_required_field));
             valid = false;
         }
-        if (!valid) return;
-
-        setLoading(true);
-
-        authRepository.login(email, password, new DataCallback<User>() {
-            @Override
-            public void onSuccess(User user) {
-                setLoading(false);
-                routeUser(user);
-            }
-
-            @Override
-            public void onError(Exception e) {
-                setLoading(false);
-                Toast.makeText(LoginActivity.this,
-                        e.getMessage() != null ? e.getMessage() : getString(R.string.error_generic),
-                        Toast.LENGTH_LONG).show();
-            }
-        });
+        
+        if (valid) {
+            viewModel.login(email, password);
+        }
     }
 
     private void routeUser(User user) {
         Intent intent;
         if (user.isAdmin()) {
             intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
-        } else if (user.getDegreeId() == null) {
+        } else if (user.getDegreeId() == null || user.getDegreeId().isEmpty()) {
             intent = new Intent(LoginActivity.this, SelectDegreeActivity.class);
         } else {
             intent = new Intent(LoginActivity.this, DashboardActivity.class);
@@ -168,8 +154,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setLoading(boolean loading) {
-        progressIndicator.setVisibility(loading ? View.VISIBLE : View.GONE);
-        loginButton.setEnabled(!loading);
-        loginButton.setText(loading ? "" : getString(R.string.login));
+        binding.progressIndicator.setVisibility(loading ? View.VISIBLE : View.GONE);
+        binding.btnLogin.setEnabled(!loading);
+        binding.btnLogin.setText(loading ? "" : getString(R.string.login));
     }
 }

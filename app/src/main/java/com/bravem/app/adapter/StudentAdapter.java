@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
-import com.bravem.app.model.User;
+import com.bravem.app.domain.model.User;
 
 public class StudentAdapter extends ListAdapter<User, StudentAdapter.StudentViewHolder> {
 
@@ -39,8 +39,8 @@ public class StudentAdapter extends ListAdapter<User, StudentAdapter.StudentView
             @Override
             public boolean areContentsTheSame(@NonNull User oldItem, @NonNull User newItem) {
                 return oldItem.getFullName().equals(newItem.getFullName()) &&
-                       oldItem.getUniversity().equals(newItem.getUniversity()) &&
-                       oldItem.getIntake().equals(newItem.getIntake());
+                       (oldItem.getUniversity() != null && oldItem.getUniversity().equals(newItem.getUniversity())) &&
+                       (oldItem.getIntake() != null && oldItem.getIntake().equals(newItem.getIntake()));
             }
         });
         this.listener = listener;

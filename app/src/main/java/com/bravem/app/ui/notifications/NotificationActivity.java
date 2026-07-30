@@ -1,4 +1,4 @@
-package com.bravem.app.ui.dashboard;
+package com.bravem.app.ui.notifications;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,21 +13,18 @@ import com.bravem.app.R;
 import com.bravem.app.adapter.NotificationAdapter;
 import com.bravem.app.data.DataCallback;
 import com.bravem.app.data.NotificationRepository;
-import com.bravem.app.data.PaperRepository;
 import com.bravem.app.model.Notification;
-import com.bravem.app.model.PastPaper;
 import com.bravem.app.ui.papers.PaperViewerActivity;
 import com.bravem.app.utils.UiUtils;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
 public class NotificationActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerView;
     private NotificationAdapter adapter;
     private View emptyState;
     private NotificationRepository notificationRepository;
-    private PaperRepository paperRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,16 +40,15 @@ public class NotificationActivity extends AppCompatActivity {
         UiUtils.handleBottomInset(findViewById(R.id.recycler_notifications));
 
         notificationRepository = new NotificationRepository(this);
-        paperRepository = new PaperRepository(this);
 
-        recyclerView = findViewById(R.id.recycler_notifications);
+        RecyclerView recyclerView = findViewById(R.id.recycler_notifications);
         emptyState = findViewById(R.id.empty_state);
 
         adapter = new NotificationAdapter(this::handleNotificationClick);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        new androidx.recyclerview.widget.ItemTouchHelper(new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
+        new androidx.recyclerview.widget.ItemTouchHelper(new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, androidx.recyclerview.widget.ItemTouchHelper.LEFT | androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
                 return false;
@@ -62,14 +58,20 @@ public class NotificationActivity extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getBindingAdapterPosition();
                 Notification notification = adapter.getNotificationAt(position);
-                notificationRepository.deleteNotification(notification, new DataCallback<Void>() {
+                
+                // Optimistically remove from adapter
+                adapter.removeNotificationAt(position);
+                
+                notificationRepository.deleteNotification(notification, new DataCallback<>() {
                     @Override
                     public void onSuccess(Void result) {
-                        loadNotifications();
+                        // Check if empty state needs to be shown
+                        emptyState.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
                     }
                     @Override
                     public void onError(Exception e) {
-                        adapter.notifyItemChanged(position);
+                        // Re-fetch everything if deletion fails
+                        loadNotifications();
                     }
                 });
             }
@@ -79,7 +81,7 @@ public class NotificationActivity extends AppCompatActivity {
     }
 
     private void loadNotifications() {
-        notificationRepository.fetchAllNotifications(new DataCallback<List<Notification>>() {
+        notificationRepository.fetchAllNotifications(new DataCallback<>() {
             @Override
             public void onSuccess(List<Notification> notifications) {
                 adapter.submitList(notifications);
@@ -95,16 +97,11 @@ public class NotificationActivity extends AppCompatActivity {
 
     private void handleNotificationClick(Notification notification) {
         if ("friend_request".equals(notification.getType())) {
-            new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle(notification.getTitle())
-                    .setMessage(notification.getMessage())
-                    .setPositiveButton(R.string.accept, (dialog, which) -> {
-                        acceptFriendRequest(notification);
-                    })
-                    .setNegativeButton(R.string.cancel, (dialog, which) -> {
-                        dismissNotification(notification);
-                    })
-                    .show();
+            com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                    notification.getTitle(),
+                    notification.getMessage(),
+                    getString(R.string.accept),
+                    () -> acceptFriendRequest(notification));
         } else if ("chat_message".equals(notification.getType())) {
             dismissNotification(notification);
             if (notification.getRelatedId() != null) {
@@ -115,22 +112,26 @@ public class NotificationActivity extends AppCompatActivity {
             if (notification.getRelatedId() != null) {
                 if ("new_paper".equals(notification.getType()) || "upload".equals(notification.getType())) {
                     executorFetchPaper(notification.getRelatedId());
+                } else if ("video_call_invite".equals(notification.getType())) {
+                    Intent intent = new Intent(this, com.bravem.app.ui.community.StudyRoomActivity.class);
+                    intent.putExtra(com.bravem.app.ui.community.StudyRoomActivity.EXTRA_CHANNEL_ID, notification.getRelatedId());
+                    startActivity(intent);
                 }
             }
         }
     }
 
     private void fetchUserAndOpenChat(String userId) {
-        new com.bravem.app.data.AuthRepository(this).fetchUserProfile(userId, new DataCallback<com.bravem.app.model.User>() {
-            @Override
-            public void onSuccess(com.bravem.app.model.User user) {
-                Intent intent = new Intent(NotificationActivity.this, com.bravem.app.ui.community.ChatActivity.class);
-                intent.putExtra(com.bravem.app.ui.community.ChatActivity.EXTRA_USER, user);
-                startActivity(intent);
-            }
-
-            @Override
-            public void onError(Exception e) {
+        FirebaseDatabase.getInstance().getReference("users").child(userId).get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult().exists()) {
+                com.bravem.app.model.User dataUser = task.getResult().getValue(com.bravem.app.model.User.class);
+                if (dataUser != null) {
+                    com.bravem.app.domain.model.User user = com.bravem.app.domain.model.UserMapper.toDomain(dataUser);
+                    Intent intent = new Intent(NotificationActivity.this, com.bravem.app.ui.community.ChatActivity.class);
+                    intent.putExtra(com.bravem.app.ui.community.ChatActivity.EXTRA_USER, user);
+                    startActivity(intent);
+                }
+            } else {
                 Toast.makeText(NotificationActivity.this, "Failed to open chat", Toast.LENGTH_SHORT).show();
             }
         });
@@ -138,7 +139,7 @@ public class NotificationActivity extends AppCompatActivity {
 
     private void acceptFriendRequest(Notification notification) {
         com.bravem.app.data.CommunityRepository communityRepository = new com.bravem.app.data.CommunityRepository(this);
-        communityRepository.acceptFriendRequest(notification.getRelatedId(), new DataCallback<Boolean>() {
+        communityRepository.acceptFriendRequest(notification.getRelatedId(), new DataCallback<>() {
             @Override
             public void onSuccess(Boolean success) {
                 Toast.makeText(NotificationActivity.this, R.string.friend_request_accepted, Toast.LENGTH_SHORT).show();
@@ -152,19 +153,31 @@ public class NotificationActivity extends AppCompatActivity {
     }
 
     private void dismissNotification(Notification notification) {
-        notificationRepository.deleteNotification(notification, new DataCallback<Void>() {
+        // Find position for optimistic removal
+        int position = -1;
+        for (int i = 0; i < adapter.getItemCount(); i++) {
+            if (adapter.getNotificationAt(i).getId().equals(notification.getId())) {
+                position = i;
+                break;
+            }
+        }
+        
+        if (position != -1) {
+            adapter.removeNotificationAt(position);
+            emptyState.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+        }
+
+        notificationRepository.deleteNotification(notification, new DataCallback<>() {
             @Override
-            public void onSuccess(Void result) {
+            public void onSuccess(Void result) {}
+            @Override
+            public void onError(Exception e) {
                 loadNotifications();
             }
-            @Override
-            public void onError(Exception e) {}
         });
     }
 
     private void executorFetchPaper(String paperId) {
-        // Simple executor or use repository if it had getById
-        // Since PaperDao has getById, let's use a temporary executor here or add to repo
         java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
             com.bravem.app.model.PastPaper paper = com.bravem.app.data.local.AppDatabase.getInstance(this).paperDao().getById(paperId);
             if (paper != null) {

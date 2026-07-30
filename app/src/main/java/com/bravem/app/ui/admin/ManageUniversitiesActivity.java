@@ -1,9 +1,6 @@
 package com.bravem.app.ui.admin;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -16,7 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bravem.app.R;
 import com.bravem.app.adapter.UniversityAdapter;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.DegreeRepository;
+import com.bravem.app.data.DegreeRepositoryImpl;
+import com.bravem.app.domain.repository.DegreeRepository;
 import com.bravem.app.utils.UiUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
@@ -40,7 +38,7 @@ public class ManageUniversitiesActivity extends AppCompatActivity {
 
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
 
-        degreeRepository = new DegreeRepository(this);
+        degreeRepository = new DegreeRepositoryImpl(this);
 
         recyclerView = findViewById(R.id.recycler_list);
         progressIndicator = findViewById(R.id.progress_indicator);
@@ -50,7 +48,8 @@ public class ManageUniversitiesActivity extends AppCompatActivity {
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
         findViewById(R.id.fab_add).setVisibility(View.GONE);
 
-        ((TextView) findViewById(R.id.text_title)).setText(R.string.manage_universities);
+        TextView title = findViewById(R.id.text_title);
+        if (title != null) title.setText(R.string.manage_universities);
 
         adapter = new UniversityAdapter(degreeRepository);
 
@@ -75,7 +74,7 @@ public class ManageUniversitiesActivity extends AppCompatActivity {
 
     private void loadUniversities() {
         progressIndicator.setVisibility(View.VISIBLE);
-        degreeRepository.fetchAllUniversities(new DataCallback<List<String>>() {
+        degreeRepository.fetchAllUniversities(new DataCallback<>() {
             @Override
             public void onSuccess(List<String> universities) {
                 progressIndicator.setVisibility(View.GONE);

@@ -2,6 +2,7 @@ package com.bravem.app.ui.admin;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,9 +11,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bravem.app.R;
 import com.bravem.app.adapter.UserAdapter;
-import com.bravem.app.data.AuthRepository;
+import com.bravem.app.data.AuthRepositoryImpl;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.model.User;
+import com.bravem.app.domain.model.User;
+import com.bravem.app.domain.repository.UserRepository;
+import com.bravem.app.utils.UiUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,29 +24,32 @@ public class DeletedUsersActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private UserAdapter adapter;
-    private AuthRepository authRepository;
+    private UserRepository userRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_users);
 
-        authRepository = new AuthRepository(this);
+        UiUtils.handleTopInset(findViewById(R.id.app_bar));
+        
+        userRepository = new AuthRepositoryImpl(this);
         
         // Hide UI elements not needed for this view
         findViewById(R.id.tab_layout).setVisibility(View.GONE);
         findViewById(R.id.fab_add_admin).setVisibility(View.GONE);
         findViewById(R.id.btn_trash).setVisibility(View.GONE);
+        findViewById(R.id.et_search).setVisibility(View.GONE);
         
-        android.widget.TextView title = findViewById(android.R.id.text1); // This might not work if title is not that ID
-        // Manually finding the title textview since I didn't give it an ID
-        // In activity_manage_users.xml it's the second child of the first linear layout.
+        TextView title = findViewById(R.id.text_title);
+        if (title != null) title.setText("Deleted & Suspended Users");
         
         recyclerView = findViewById(R.id.recycler_users);
         adapter = new UserAdapter(new UserAdapter.OnUserActionListener() {
             @Override
             public void onDelete(User user) {
-                authRepository.deleteUserPermanently(user, new DataCallback<Void>() {
+                userRepository.deleteUserPermanently(user, new DataCallback<>() {
                     @Override
                     public void onSuccess(Void result) {
                         loadDeletedUsers();
@@ -71,16 +77,16 @@ public class DeletedUsersActivity extends AppCompatActivity {
     }
 
     private void loadDeletedUsers() {
-        authRepository.fetchAllUsers(new DataCallback<List<User>>() {
+        userRepository.fetchAllUsers(new DataCallback<>() {
             @Override
             public void onSuccess(List<User> result) {
                 List<User> deletedOrSuspended = new ArrayList<>();
                 long now = System.currentTimeMillis();
                 for (User u : result) {
-                    if (u.isDeletionRequested()) {
+                    if (u.getDeletionRequestedAt() > 0) {
                         // Check if 30 days passed
                         if (now - u.getDeletionRequestedAt() > 30L * 24 * 60 * 60 * 1000) {
-                            authRepository.deleteUserPermanently(u, new DataCallback<Void>() {
+                            userRepository.deleteUserPermanently(u, new DataCallback<>() {
                                 @Override
                                 public void onSuccess(Void res) {}
                                 @Override
@@ -102,7 +108,7 @@ public class DeletedUsersActivity extends AppCompatActivity {
     }
 
     private void restoreUser(User user) {
-        authRepository.restoreUser(user, new DataCallback<Void>() {
+        userRepository.restoreUser(user, new DataCallback<>() {
             @Override
             public void onSuccess(Void result) {
                 Toast.makeText(DeletedUsersActivity.this, "User restored", Toast.LENGTH_SHORT).show();

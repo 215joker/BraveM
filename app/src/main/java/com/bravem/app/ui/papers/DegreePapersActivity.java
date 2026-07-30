@@ -1,6 +1,7 @@
 package com.bravem.app.ui.papers;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,7 +18,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bravem.app.R;
 import com.bravem.app.adapter.PastPaperAdapter;
 import com.bravem.app.data.DataCallback;
-import com.bravem.app.data.PaperRepository;
+import com.bravem.app.data.PaperRepositoryImpl;
+import com.bravem.app.domain.repository.PaperRepository;
 import com.bravem.app.model.PastPaper;
 import com.bravem.app.utils.FileUtils;
 import com.bravem.app.utils.UiUtils;
@@ -43,6 +45,17 @@ public class DegreePapersActivity extends AppCompatActivity {
     private View backButton;
 
     private PaperRepository paperRepository;
+    private PastPaper paperForMemo;
+
+    private final androidx.activity.result.ActivityResultLauncher<Intent> memoPickerLauncher =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null && paperForMemo != null) {
+                        uploadMemoOnly(uri);
+                    }
+                }
+            });
 
     private String degreeId;
     private String degreeName;
@@ -59,7 +72,7 @@ public class DegreePapersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_degree_papers);
 
-        paperRepository = new PaperRepository(this);
+        paperRepository = new PaperRepositoryImpl(this);
 
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
@@ -84,9 +97,7 @@ public class DegreePapersActivity extends AppCompatActivity {
         adapter = new PastPaperAdapter(new PastPaperAdapter.OnPaperActionListener() {
             @Override
             public void onPaperClick(PastPaper paper) {
-                Intent intent = new Intent(DegreePapersActivity.this, PaperViewerActivity.class);
-                intent.putExtra(PaperViewerActivity.EXTRA_PAPER, paper);
-                startActivity(intent);
+                showPaperSelectionDialog(paper);
             }
 
             @Override
@@ -108,6 +119,61 @@ public class DegreePapersActivity extends AppCompatActivity {
         if (degreeId != null) {
             loadPapers();
         }
+    }
+
+    private void showPaperSelectionDialog(PastPaper paper) {
+        boolean hasMemo = paper.getMemoUrl() != null;
+        String[] options = hasMemo 
+                ? new String[]{"View Question Paper", "View Memorandum"} 
+                : new String[]{"View Question Paper", "Upload Memorandum (Missing)"};
+        int[] icons = {R.drawable.ic_document, hasMemo ? R.drawable.ic_document : R.drawable.ic_upload};
+
+        com.bravem.app.utils.DialogUtils.showOptions(this, paper.getTitle(), options, icons, index -> {
+            if (index == 0) {
+                openPaperViewer(paper, false);
+            } else {
+                if (hasMemo) {
+                    openPaperViewer(paper, true);
+                } else {
+                    paperForMemo = paper;
+                    launchMemoPicker();
+                }
+            }
+        });
+    }
+
+    private void launchMemoPicker() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+        memoPickerLauncher.launch(Intent.createChooser(intent, "Select Memorandum (PDF)"));
+    }
+
+    private void uploadMemoOnly(Uri uri) {
+        String fileName = FileUtils.getFileName(this, uri);
+        Toast.makeText(this, "Uploading memorandum...", Toast.LENGTH_SHORT).show();
+        
+        paperRepository.uploadMemorandumOnly(paperForMemo.getId(), uri, fileName, null, new DataCallback<PastPaper>() {
+            @Override
+            public void onSuccess(PastPaper result) {
+                runOnUiThread(() -> {
+                    Toast.makeText(DegreePapersActivity.this, "Memorandum uploaded successfully!", Toast.LENGTH_LONG).show();
+                    loadPapers();
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                runOnUiThread(() -> Toast.makeText(DegreePapersActivity.this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    private void openPaperViewer(PastPaper paper, boolean isMemo) {
+        Intent intent = new Intent(this, PaperViewerActivity.class);
+        intent.putExtra(PaperViewerActivity.EXTRA_PAPER, paper);
+        intent.putExtra("is_memo", isMemo);
+        startActivity(intent);
     }
 
     private void setupSearch() {
@@ -194,26 +260,21 @@ public class DegreePapersActivity extends AppCompatActivity {
                 "Oldest Upload",
                 "Show All Papers"
         };
-
-        new AlertDialog.Builder(this)
-                .setTitle("Filter & Sort")
-                .setSingleChoiceItems(options, currentSortType == 0 && selectedIntake == null ? 3 : currentSortType, (dialog, which) -> {
-                    if (which == 3) {
-                        currentSortType = 0;
-                        selectedIntake = null; // Clear intake filter for "Show All"
-                    } else if (which == 0) {
-                        currentSortType = 0;
-                        // Restore selected intake if it was cleared
-                        if (selectedIntake == null) {
-                            selectedIntake = getIntent().getStringExtra(EXTRA_INTAKE);
-                        }
-                    } else {
-                        currentSortType = which;
-                    }
-                    applyFilters();
-                    dialog.dismiss();
-                })
-                .show();
+        // Using showOptions for modern look, icons are optional
+        com.bravem.app.utils.DialogUtils.showOptions(this, "Filter & Sort", options, null, which -> {
+            if (which == 3) {
+                currentSortType = 0;
+                selectedIntake = null;
+            } else if (which == 0) {
+                currentSortType = 0;
+                if (selectedIntake == null) {
+                    selectedIntake = getIntent().getStringExtra(EXTRA_INTAKE);
+                }
+            } else {
+                currentSortType = which;
+            }
+            applyFilters();
+        });
     }
 
     private void togglePin(PastPaper paper) {

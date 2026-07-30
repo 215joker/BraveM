@@ -10,12 +10,23 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:background="@color/divider" />
+
         <TextView
+            android:id="@+id/text_dialog_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Edit Profile"
-            android:textAppearance="@style/TextAppearance.BraveM.Headline"
-            android:layout_marginBottom="20dp"/>
+            android:fontFamily="serif"
+            android:textColor="@color/ink_900"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="20dp"
+            android:text="Edit Profile" />
 
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.BraveM.TextInputLayout"
@@ -56,17 +67,20 @@
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <View
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_save"
+            style="@style/Widget.BraveM.Button"
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/divider"
-            android:layout_marginVertical="24dp" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/save" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_delete_account"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
+            style="@style/Widget.BraveM.Button.Text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:text="Delete Account"
             android:textColor="@color/error_600"
             app:icon="@drawable/ic_delete"
