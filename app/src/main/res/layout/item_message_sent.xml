@@ -46,7 +46,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:layout_marginTop="2dp"
-                android:textColor="@color/ink_100"
+                android:textColor="@color/text_on_ink"
+                android:alpha="0.7"
                 android:textSize="10sp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

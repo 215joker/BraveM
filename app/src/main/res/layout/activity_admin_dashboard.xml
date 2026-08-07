@@ -99,7 +99,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="0"
                                 android:textAppearance="@style/TextAppearance.BraveM.Title"
-                                android:textColor="@color/ink_900"
+                                android:textColor="@color/ink_text"
                                 android:textSize="20sp" />
 
                             <TextView
@@ -201,7 +201,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="0"
                                 android:textAppearance="@style/TextAppearance.BraveM.Title"
-                                android:textColor="@color/ink_900"
+                                android:textColor="@color/ink_text"
                                 android:textSize="20sp" />
 
                             <TextView

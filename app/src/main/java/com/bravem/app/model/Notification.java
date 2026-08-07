@@ -34,6 +34,7 @@ public class Notification implements Serializable {
     @NonNull
     public String getId() { return id; }
     public void setId(@NonNull String id) { this.id = id; }
+    public void setId(@NonNull Object id) { this.id = String.valueOf(id); }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -49,6 +50,7 @@ public class Notification implements Serializable {
 
     public String getRelatedId() { return relatedId; }
     public void setRelatedId(String relatedId) { this.relatedId = relatedId; }
+    public void setRelatedId(Object relatedId) { this.relatedId = relatedId != null ? String.valueOf(relatedId) : null; }
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }

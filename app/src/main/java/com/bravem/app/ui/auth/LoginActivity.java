@@ -149,6 +149,15 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             intent = new Intent(LoginActivity.this, DashboardActivity.class);
         }
+        
+        // Final sanity check for admin intent
+        if (intent.getComponent() != null && intent.getComponent().getClassName().contains("AdminDashboardActivity")) {
+             if (!user.isAdmin()) {
+                 Toast.makeText(this, "Unauthorised: Not an admin account", Toast.LENGTH_LONG).show();
+                 return;
+             }
+        }
+
         startActivity(intent);
         finishAffinity();
     }

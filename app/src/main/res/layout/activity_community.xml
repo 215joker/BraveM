@@ -74,7 +74,7 @@
                 android:layout_marginTop="16dp"
                 app:hintEnabled="false"
                 app:startIconDrawable="@drawable/ic_search"
-                app:startIconTint="@color/ink_900">
+                app:startIconTint="@color/ink_text">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_search"
@@ -96,7 +96,7 @@
                 app:tabGravity="fill"
                 app:tabIndicatorColor="@color/amber_600"
                 app:tabSelectedTextColor="@color/amber_600"
-                app:tabTextColor="@color/ink_900">
+                app:tabTextColor="@color/ink_text">
 
                 <com.google.android.material.tabs.TabItem
                     android:layout_width="wrap_content"

@@ -33,7 +33,13 @@ public class Group implements Serializable {
 
     @NonNull
     public String getId() { return id; }
-    public void setId(@NonNull String id) { this.id = id; }
+    public void setId(@NonNull String id) {
+        this.id = id;
+    }
+
+    public void setId(Object id) {
+        this.id = id != null ? String.valueOf(id) : "";
+    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -42,7 +48,13 @@ public class Group implements Serializable {
     public void setCreatorId(String creatorId) { this.creatorId = creatorId; }
 
     public String getCourseId() { return courseId; }
-    public void setCourseId(String courseId) { this.courseId = courseId; }
+    public void setCourseId(String courseId) {
+        this.courseId = courseId;
+    }
+
+    public void setCourseId(Object courseId) {
+        this.courseId = courseId != null ? String.valueOf(courseId) : null;
+    }
 
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }

@@ -64,7 +64,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:textColor="@color/ink_100"
+                            android:textColor="@color/text_on_ink"
+                            android:alpha="0.8"
                             android:textSize="12sp" />
 
                         <TextView
@@ -72,7 +73,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:textColor="@color/ink_100"
+                            android:textColor="@color/text_on_ink"
+                            android:alpha="0.8"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -107,7 +109,7 @@
                             android:layout_height="16dp"
                             android:layout_gravity="top|end"
                             android:gravity="center"
-                            android:textColor="@color/ink_900"
+                            android:textColor="@color/ink_text"
                             android:textSize="10sp"
                             android:textStyle="bold"
                             android:text="0"
@@ -210,34 +212,65 @@
         </androidx.core.widget.NestedScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <FrameLayout
+    <LinearLayout
+        android:id="@+id/fab_container_secondary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="96dp">
+        android:layout_marginBottom="96dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_chat"
+            android:id="@+id/fab_library"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="@string/chat"
-            android:src="@drawable/ic_chat"
-            app:backgroundTint="@color/ink_900"
-            app:tint="@color/amber_600" />
+            android:layout_marginBottom="16dp"
+            android:contentDescription="@string/library"
+            android:src="@drawable/ic_library"
+            app:backgroundTint="@color/ink_text"
+            app:tint="@color/amber_600"
+            app:fabSize="mini" />
 
-        <TextView
-            android:id="@+id/text_chat_badge"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_gravity="top|end"
-            android:background="@drawable/bg_badge_count"
-            android:gravity="center"
-            android:textColor="@color/ink_900"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-    </FrameLayout>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_marketplace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="@string/marketplace"
+            android:src="@drawable/ic_marketplace"
+            app:backgroundTint="@color/ink_text"
+            app:tint="@color/amber_600"
+            app:fabSize="mini" />
+
+        <FrameLayout
+            android:id="@+id/btn_chat_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_chat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/chat"
+                android:src="@drawable/ic_chat"
+                app:backgroundTint="@color/ink_text"
+                app:tint="@color/amber_600" />
+
+            <TextView
+                android:id="@+id/text_chat_badge"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/bg_badge_count"
+                android:gravity="center"
+                android:textColor="@color/ink_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_upload"

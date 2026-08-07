@@ -118,7 +118,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center"
-            app:indicatorColor="@color/ink_900" />
+            app:indicatorColor="@color/ink_text" />
 
         <TextView
             android:id="@+id/empty_state"

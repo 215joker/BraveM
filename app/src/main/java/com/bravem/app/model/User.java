@@ -52,7 +52,7 @@ public class User implements Serializable {
         this.deletionRequested = false;
         this.deletionRequestedAt = 0;
         this.isSynced = false;
-        this.appVersion = "1.2.3";
+        this.appVersion = "1.2.4";
     }
 
     @NonNull
@@ -193,6 +193,6 @@ public class User implements Serializable {
     }
 
     public boolean isAdmin() {
-        return ROLE_ADMIN.equals(role);
+        return ROLE_ADMIN.equalsIgnoreCase(role);
     }
 }

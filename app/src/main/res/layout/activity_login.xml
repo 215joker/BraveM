@@ -108,7 +108,7 @@
                     android:layout_marginTop="14dp"
                     android:layout_gravity="center"
                     android:visibility="gone"
-                    app:indicatorColor="@color/ink_900" />
+                    app:indicatorColor="@color/ink_text" />
 
                 <TextView
                     android:id="@+id/link_register"
@@ -118,7 +118,7 @@
                     android:layout_gravity="center"
                     android:padding="8dp"
                     android:text="@string/dont_have_account"
-                    android:textColor="@color/ink_900"
+                    android:textColor="@color/ink_text"
                     android:fontFamily="sans-serif-medium"
                     android:textSize="14sp" />
 

@@ -87,6 +87,10 @@ public class PastPaper implements Serializable {
         this.id = id;
     }
 
+    public void setId(@NonNull Object id) {
+        this.id = String.valueOf(id);
+    }
+
     public String getTitle() {
         return title;
     }
@@ -101,6 +105,10 @@ public class PastPaper implements Serializable {
 
     public void setDegreeId(String degreeId) {
         this.degreeId = degreeId;
+    }
+
+    public void setDegreeId(Object degreeId) {
+        this.degreeId = degreeId != null ? String.valueOf(degreeId) : null;
     }
 
     public String getDegreeName() {
@@ -127,12 +135,20 @@ public class PastPaper implements Serializable {
         this.intake = intake;
     }
 
+    public void setIntake(Object intake) {
+        this.intake = intake != null ? String.valueOf(intake) : null;
+    }
+
     public String getCourseId() {
         return courseId;
     }
 
     public void setCourseId(String courseId) {
         this.courseId = courseId;
+    }
+
+    public void setCourseId(Object courseId) {
+        this.courseId = courseId != null ? String.valueOf(courseId) : null;
     }
 
     public String getCourseName() {

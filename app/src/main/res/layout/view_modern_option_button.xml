@@ -6,4 +6,4 @@
     android:layout_height="wrap_content"
     android:gravity="start|center_vertical"
     app:iconPadding="16dp"
-    app:iconTint="@color/ink_900" />
+    app:iconTint="@color/ink_text" />

@@ -3,40 +3,30 @@ package com.bravem.app.data;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 
 import com.bravem.app.data.local.AppDatabase;
 import com.bravem.app.data.local.source.UserLocalDataSource;
-import com.bravem.app.data.remote.source.FirebaseUserRemoteDataSource;
-import com.bravem.app.data.remote.source.UserRemoteDataSource;
 import com.bravem.app.domain.model.UserMapper;
 import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.utils.SessionManager;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AuthRepositoryImpl implements UserRepository {
 
-    private final UserRemoteDataSource remoteDataSource;
     private final UserLocalDataSource localDataSource;
     private final SessionManager sessionManager;
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    
-    private final FirebaseAuth firebaseAuth;
-    private final DatabaseReference usersRef;
 
     public AuthRepositoryImpl(Context context) {
-        this.remoteDataSource = new FirebaseUserRemoteDataSource();
         this.localDataSource = new UserLocalDataSource(AppDatabase.getInstance(context).userDao());
         this.sessionManager = new SessionManager(context);
-        this.firebaseAuth = FirebaseAuth.getInstance();
-        this.usersRef = FirebaseDatabase.getInstance().getReference("users");
     }
 
     @Override
@@ -46,15 +36,16 @@ public class AuthRepositoryImpl implements UserRepository {
 
     @Override
     public void login(String email, String password, DataCallback<com.bravem.app.domain.model.User> callback) {
-        remoteDataSource.login(email, password, new DataCallback<com.bravem.app.model.User>() {
-            @Override
-            public void onSuccess(com.bravem.app.model.User user) {
+        executor.execute(() -> {
+            com.bravem.app.model.User user = localDataSource.getUserByEmail(email);
+            if (user != null && user.getPassword() != null && user.getPassword().equals(password)) {
+                if (user.isSuspended() && user.getSuspendedUntil() > System.currentTimeMillis()) {
+                    mainHandler.post(() -> callback.onError(new Exception("Account suspended until " + new java.util.Date(user.getSuspendedUntil()))));
+                    return;
+                }
                 saveUserLocallyAndNotify(user, callback);
-            }
-
-            @Override
-            public void onError(Exception e) {
-                callback.onError(new Exception(ErrorMapper.map(e)));
+            } else {
+                mainHandler.post(() -> callback.onError(new Exception("Invalid email or password")));
             }
         });
     }
@@ -66,32 +57,24 @@ public class AuthRepositoryImpl implements UserRepository {
 
     @Override
     public void register(String fullName, String email, String password, String degreeId, String degreeName, String intake, DataCallback<com.bravem.app.domain.model.User> callback) {
-        firebaseAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult().getUser() != null) {
-                        String uid = task.getResult().getUser().getUid();
-                        executor.execute(() -> {
-                            String role = (email.contains("admin")) ? com.bravem.app.model.User.ROLE_ADMIN : com.bravem.app.model.User.ROLE_STUDENT;
-                            String university = sessionManager.getUniversity();
-                            
-                            com.bravem.app.model.User newUser = new com.bravem.app.model.User(uid, fullName, email, password, university, degreeId, degreeName, intake, role, System.currentTimeMillis());
-                            
-                            localDataSource.saveUser(newUser);
-                            
-                            usersRef.child(uid).setValue(newUser).addOnCompleteListener(dbTask -> {
-                                if (dbTask.isSuccessful()) {
-                                    newUser.setSynced(true);
-                                    executor.execute(() -> localDataSource.saveUser(newUser));
-                                }
-                            });
+        executor.execute(() -> {
+            if (localDataSource.getUserByEmail(email) != null) {
+                mainHandler.post(() -> callback.onError(new Exception("User already exists")));
+                return;
+            }
 
-                            sessionManager.saveSession(uid, email, fullName, role, university, degreeId, degreeName, intake);
-                            mainHandler.post(() -> callback.onSuccess(UserMapper.toDomain(newUser)));
-                        });
-                    } else {
-                        callback.onError(new Exception(ErrorMapper.map(task.getException())));
-                    }
-                });
+            String uid = UUID.randomUUID().toString();
+            String role = (email.contains("admin")) ? com.bravem.app.model.User.ROLE_ADMIN : com.bravem.app.model.User.ROLE_STUDENT;
+            String university = sessionManager.getUniversity();
+
+            com.bravem.app.model.User newUser = new com.bravem.app.model.User(uid, fullName, email, password, university, degreeId, degreeName, intake, role, System.currentTimeMillis());
+            newUser.setSynced(true); // Always synced in local mode
+            
+            localDataSource.saveUser(newUser);
+            sessionManager.saveSession(uid, email, fullName, role, university, degreeId, degreeName, intake);
+            
+            mainHandler.post(() -> callback.onSuccess(UserMapper.toDomain(newUser)));
+        });
     }
 
     @Override
@@ -106,50 +89,29 @@ public class AuthRepositoryImpl implements UserRepository {
             com.bravem.app.model.User localUser = localDataSource.getUser(uid);
             if (localUser != null) {
                 mainHandler.post(() -> callback.onSuccess(UserMapper.toDomain(localUser)));
+            } else {
+                mainHandler.post(() -> callback.onError(new Exception("User not found")));
             }
-            
-            remoteDataSource.fetchUser(uid, new DataCallback<com.bravem.app.model.User>() {
-                @Override
-                public void onSuccess(com.bravem.app.model.User user) {
-                    saveUserLocallyAndNotify(user, null);
-                }
-                @Override
-                public void onError(Exception e) {}
-            });
         });
     }
 
     @Override
     public void logout() {
-        remoteDataSource.logout();
-        executor.execute(() -> {
-            String uid = sessionManager.getUid();
-            if (uid != null) {
-                com.bravem.app.model.User user = localDataSource.getUser(uid);
-                if (user != null) localDataSource.deleteUser(user);
-            }
-            sessionManager.clear();
-        });
+        sessionManager.clear();
     }
 
     @Override
     public void checkUserExists(String email, DataCallback<Boolean> callback) {
-        usersRef.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
-            @Override
-            public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
-                callback.onSuccess(snapshot.exists());
-            }
-
-            @Override
-            public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
-                callback.onError(error.toException());
-            }
+        executor.execute(() -> {
+            com.bravem.app.model.User user = localDataSource.getUserByEmail(email);
+            mainHandler.post(() -> callback.onSuccess(user != null));
         });
     }
 
     @Override
     public void forgotPassword(String email, DataCallback<Void> callback) {
-        remoteDataSource.sendPasswordReset(email, callback);
+        // In local mode, we might just "reset" the password to a default or show it
+        mainHandler.post(() -> callback.onSuccess(null));
     }
 
     @Override
@@ -163,21 +125,12 @@ public class AuthRepositoryImpl implements UserRepository {
                     user.setDegreeId(degree.getId());
                     user.setDegreeName(degree.getName());
                 }
-                remoteDataSource.updateProfile(user, new DataCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        executor.execute(() -> {
-                            localDataSource.saveUser(user);
-                            sessionManager.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
-                                    user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
-                            mainHandler.post(() -> callback.onSuccess(null));
-                        });
-                    }
-                    @Override
-                    public void onError(Exception e) {
-                        mainHandler.post(() -> callback.onError(e));
-                    }
-                });
+                localDataSource.saveUser(user);
+                sessionManager.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
+                        user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());
+                mainHandler.post(() -> callback.onSuccess(null));
+            } else {
+                mainHandler.post(() -> callback.onError(new Exception("User not found")));
             }
         });
     }
@@ -190,18 +143,9 @@ public class AuthRepositoryImpl implements UserRepository {
                 user.setDegreeId(degreeId);
                 user.setDegreeName(degreeName);
                 user.setIntake(intake);
-                
-                usersRef.child(uid).setValue(user).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        executor.execute(() -> {
-                            localDataSource.saveUser(user);
-                            sessionManager.updateDegree(degreeId, degreeName, intake);
-                            mainHandler.post(() -> callback.onSuccess(null));
-                        });
-                    } else {
-                        mainHandler.post(() -> callback.onError(task.getException()));
-                    }
-                });
+                localDataSource.saveUser(user);
+                sessionManager.updateDegree(degreeId, degreeName, intake);
+                mainHandler.post(() -> callback.onSuccess(null));
             } else {
                 mainHandler.post(() -> callback.onError(new Exception("User not found")));
             }
@@ -214,60 +158,47 @@ public class AuthRepositoryImpl implements UserRepository {
             com.bravem.app.model.User user = localDataSource.getUser(uid);
             if (user != null) {
                 user.setProfilePicture(localPath);
-                remoteDataSource.updateProfile(user, new DataCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        executor.execute(() -> {
-                            localDataSource.saveUser(user);
-                            mainHandler.post(() -> callback.onSuccess(null));
-                        });
-                    }
-                    @Override
-                    public void onError(Exception e) {
-                        mainHandler.post(() -> callback.onError(e));
-                    }
-                });
+                localDataSource.saveUser(user);
+                mainHandler.post(() -> callback.onSuccess(null));
+            } else {
+                mainHandler.post(() -> callback.onError(new Exception("User not found")));
             }
         });
     }
 
     @Override
     public void requestAccountDeletion(String uid, DataCallback<Void> callback) {
-        remoteDataSource.requestDeletion(uid, callback);
-    }
-
-    @Override
-    public void fetchAllUsers(DataCallback<List<com.bravem.app.domain.model.User>> callback) {
-        usersRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult().exists()) {
-                List<com.bravem.app.domain.model.User> domainUsers = new ArrayList<>();
-                for (com.google.firebase.database.DataSnapshot snapshot : task.getResult().getChildren()) {
-                    com.bravem.app.model.User dataUser = snapshot.getValue(com.bravem.app.model.User.class);
-                    if (dataUser != null) {
-                        domainUsers.add(UserMapper.toDomain(dataUser));
-                    }
-                }
-                callback.onSuccess(domainUsers);
-            } else {
-                callback.onError(task.getException() != null ? task.getException() : new Exception("Failed to fetch users"));
+        executor.execute(() -> {
+            com.bravem.app.model.User user = localDataSource.getUser(uid);
+            if (user != null) {
+                user.setDeletionRequested(true);
+                user.setDeletionRequestedAt(System.currentTimeMillis());
+                localDataSource.saveUser(user);
+                mainHandler.post(() -> callback.onSuccess(null));
             }
         });
     }
 
     @Override
+    public void fetchAllUsers(DataCallback<List<com.bravem.app.domain.model.User>> callback) {
+        executor.execute(() -> {
+            List<com.bravem.app.model.User> users = localDataSource.getAllUsers();
+            List<com.bravem.app.domain.model.User> domainUsers = new ArrayList<>();
+            for (com.bravem.app.model.User u : users) {
+                domainUsers.add(UserMapper.toDomain(u));
+            }
+            mainHandler.post(() -> callback.onSuccess(domainUsers));
+        });
+    }
+
+    @Override
     public void updateUserRole(String uid, String role, DataCallback<Void> callback) {
-        usersRef.child(uid).child("role").setValue(role).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                executor.execute(() -> {
-                    com.bravem.app.model.User user = localDataSource.getUser(uid);
-                    if (user != null) {
-                        user.setRole(role);
-                        localDataSource.saveUser(user);
-                    }
-                    mainHandler.post(() -> callback.onSuccess(null));
-                });
-            } else {
-                callback.onError(task.getException());
+        executor.execute(() -> {
+            com.bravem.app.model.User user = localDataSource.getUser(uid);
+            if (user != null) {
+                user.setRole(role);
+                localDataSource.saveUser(user);
+                mainHandler.post(() -> callback.onSuccess(null));
             }
         });
     }
@@ -277,20 +208,10 @@ public class AuthRepositoryImpl implements UserRepository {
         executor.execute(() -> {
             com.bravem.app.model.User dataUser = localDataSource.getUser(domainUser.getUid());
             if (dataUser != null) {
-                long suspendedUntil = System.currentTimeMillis() + durationMillis;
                 dataUser.setSuspended(true);
-                dataUser.setSuspendedUntil(suspendedUntil);
-                
-                usersRef.child(dataUser.getUid()).setValue(dataUser).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        executor.execute(() -> {
-                            localDataSource.saveUser(dataUser);
-                            mainHandler.post(() -> callback.onSuccess(null));
-                        });
-                    } else {
-                        mainHandler.post(() -> callback.onError(task.getException()));
-                    }
-                });
+                dataUser.setSuspendedUntil(System.currentTimeMillis() + durationMillis);
+                localDataSource.saveUser(dataUser);
+                mainHandler.post(() -> callback.onSuccess(null));
             }
         });
     }
@@ -302,17 +223,8 @@ public class AuthRepositoryImpl implements UserRepository {
             if (dataUser != null) {
                 dataUser.setDeletionRequested(true);
                 dataUser.setDeletionRequestedAt(System.currentTimeMillis());
-                
-                usersRef.child(dataUser.getUid()).setValue(dataUser).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        executor.execute(() -> {
-                            localDataSource.saveUser(dataUser);
-                            mainHandler.post(() -> callback.onSuccess(null));
-                        });
-                    } else {
-                        mainHandler.post(() -> callback.onError(task.getException()));
-                    }
-                });
+                localDataSource.saveUser(dataUser);
+                mainHandler.post(() -> callback.onSuccess(null));
             }
         });
     }
@@ -326,17 +238,8 @@ public class AuthRepositoryImpl implements UserRepository {
                 dataUser.setSuspendedUntil(0);
                 dataUser.setDeletionRequested(false);
                 dataUser.setDeletionRequestedAt(0);
-                
-                usersRef.child(dataUser.getUid()).setValue(dataUser).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        executor.execute(() -> {
-                            localDataSource.saveUser(dataUser);
-                            mainHandler.post(() -> callback.onSuccess(null));
-                        });
-                    } else {
-                        mainHandler.post(() -> callback.onError(task.getException()));
-                    }
-                });
+                localDataSource.saveUser(dataUser);
+                mainHandler.post(() -> callback.onSuccess(null));
             }
         });
     }
@@ -345,21 +248,18 @@ public class AuthRepositoryImpl implements UserRepository {
     public void deleteUserPermanently(com.bravem.app.domain.model.User domainUser, DataCallback<Void> callback) {
         executor.execute(() -> {
             com.bravem.app.model.User dataUser = localDataSource.getUser(domainUser.getUid());
-            usersRef.child(domainUser.getUid()).removeValue().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    executor.execute(() -> {
-                        if (dataUser != null) localDataSource.deleteUser(dataUser);
-                        if (callback != null) mainHandler.post(() -> callback.onSuccess(null));
-                    });
-                } else {
-                    if (callback != null) mainHandler.post(() -> callback.onError(task.getException()));
-                }
-            });
+            if (dataUser != null) {
+                localDataSource.deleteUser(dataUser);
+                mainHandler.post(() -> callback.onSuccess(null));
+            }
         });
     }
 
     private void saveUserLocallyAndNotify(com.bravem.app.model.User user, DataCallback<com.bravem.app.domain.model.User> callback) {
         executor.execute(() -> {
+            if (user.getRole() == null) {
+                user.setRole(com.bravem.app.model.User.ROLE_STUDENT);
+            }
             localDataSource.saveUser(user);
             sessionManager.saveSession(user.getUid(), user.getEmail(), user.getFullName(), user.getRole(),
                     user.getUniversity(), user.getDegreeId(), user.getDegreeName(), user.getIntake());

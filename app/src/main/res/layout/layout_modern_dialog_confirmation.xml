@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="serif"
-        android:textColor="@color/ink_900"
+        android:textColor="@color/ink_text"
         android:textSize="20sp"
         android:textStyle="bold" />
 

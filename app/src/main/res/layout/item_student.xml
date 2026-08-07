@@ -60,7 +60,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/send_friend_request"
             android:src="@drawable/ic_add"
-            app:tint="@color/ink_900" />
+            app:tint="@color/ink_text" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

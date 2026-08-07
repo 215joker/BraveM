@@ -16,7 +16,7 @@ import com.bravem.app.model.PastPaper;
 import com.bravem.app.model.SearchLog;
 import com.bravem.app.model.User;
 
-@Database(entities = {User.class, Degree.class, Course.class, PastPaper.class, Notification.class, SearchLog.class, Friendship.class, ChatMessage.class, Group.class}, version = 26, exportSchema = false)
+@Database(entities = {User.class, Degree.class, Course.class, PastPaper.class, Notification.class, SearchLog.class, Friendship.class, ChatMessage.class, Group.class}, version = 27, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     private static volatile AppDatabase INSTANCE;
 

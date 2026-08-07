@@ -2,9 +2,10 @@
 <resources>
     <!-- Brand palette: adjusted for Dark Mode -->
     <color name="ink_900">#121B2E</color>
+    <color name="ink_text">#FFFFFF</color>
     <color name="ink_700">#1B2A4A</color>
-    <color name="ink_500">#3D5278</color>
-    <color name="ink_100">#E7EBF2</color>
+    <color name="ink_500">#8B9DBB</color>
+    <color name="ink_100">#1E293B</color>
 
     <color name="parchment_50">#121212</color>
     <color name="parchment_100">#121212</color>
@@ -23,9 +24,13 @@
     <color name="text_primary">#F7F3EA</color>
     <color name="text_secondary">#BDBBB0</color>
     <color name="text_on_ink">#F7F3EA</color>
-    <color name="text_hint">#7A7768</color>
+    <color name="text_hint">#9A9788</color>
 
     <color name="divider">#2C2C2C</color>
     <color name="white">#1E1E1E</color>
     <color name="surface">#1E1E1E</color>
+
+    <!-- Logo and Social Colors for Dark Mode -->
+    <color name="logo_dark">#F7F3EA</color>
+    <color name="github_black">#FFFFFF</color>
 </resources>

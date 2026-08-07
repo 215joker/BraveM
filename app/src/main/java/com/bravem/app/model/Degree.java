@@ -46,6 +46,10 @@ public class Degree implements Serializable {
         this.id = id;
     }
 
+    public void setId(@NonNull Object id) {
+        this.id = String.valueOf(id);
+    }
+
     public String getName() {
         return name;
     }
@@ -68,6 +72,10 @@ public class Degree implements Serializable {
 
     public void setUniversity(String university) {
         this.university = university;
+    }
+
+    public void setUniversity(Object university) {
+        this.university = university != null ? String.valueOf(university) : null;
     }
 
     public long getCreatedAt() {

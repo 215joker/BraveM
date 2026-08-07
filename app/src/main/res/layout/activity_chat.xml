@@ -101,7 +101,7 @@
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_upload"
-                app:tint="@color/ink_900" />
+                app:tint="@color/ink_text" />
 
             <EditText
                 android:id="@+id/et_message"

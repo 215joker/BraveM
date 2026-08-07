@@ -90,7 +90,7 @@
                 android:layout_height="32dp"
                 android:layout_gravity="center"
                 android:visibility="gone"
-                app:indicatorColor="@color/ink_900" />
+                app:indicatorColor="@color/ink_text" />
 
             <TextView
                 android:id="@+id/empty_state"

@@ -21,7 +21,7 @@
         android:layout_marginHorizontal="24dp"
         android:fontFamily="serif"
         android:text="@string/select_intake_title"
-        android:textColor="@color/ink_900"
+        android:textColor="@color/ink_text"
         android:textSize="22sp"
         android:textStyle="bold"
         android:gravity="center" />

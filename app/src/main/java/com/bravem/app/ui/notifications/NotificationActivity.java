@@ -2,6 +2,8 @@ package com.bravem.app.ui.notifications;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -16,7 +18,6 @@ import com.bravem.app.data.NotificationRepository;
 import com.bravem.app.model.Notification;
 import com.bravem.app.ui.papers.PaperViewerActivity;
 import com.bravem.app.utils.UiUtils;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class NotificationActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.recycler_notifications);
         emptyState = findViewById(R.id.empty_state);
 
-        adapter = new NotificationAdapter(this::handleNotificationClick);
+        adapter = new NotificationAdapter(this::handleNotificationClick, this::dismissNotification);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
@@ -78,6 +79,46 @@ public class NotificationActivity extends AppCompatActivity {
         }).attachToRecyclerView(recyclerView);
 
         loadNotifications();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_notifications, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_clear_all) {
+            confirmClearAll();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void confirmClearAll() {
+        if (adapter.getItemCount() == 0) return;
+        
+        com.bravem.app.utils.DialogUtils.showConfirmation(this,
+                getString(R.string.clear_all_notifications),
+                "Are you sure you want to clear all notifications?",
+                getString(R.string.delete),
+                this::clearAllNotifications);
+    }
+
+    private void clearAllNotifications() {
+        notificationRepository.deleteAllNotifications(new DataCallback<>() {
+            @Override
+            public void onSuccess(Void result) {
+                adapter.submitList(new java.util.ArrayList<>());
+                emptyState.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(NotificationActivity.this, "Failed to clear notifications", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void loadNotifications() {
@@ -122,17 +163,17 @@ public class NotificationActivity extends AppCompatActivity {
     }
 
     private void fetchUserAndOpenChat(String userId) {
-        FirebaseDatabase.getInstance().getReference("users").child(userId).get().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult().exists()) {
-                com.bravem.app.model.User dataUser = task.getResult().getValue(com.bravem.app.model.User.class);
-                if (dataUser != null) {
-                    com.bravem.app.domain.model.User user = com.bravem.app.domain.model.UserMapper.toDomain(dataUser);
+        java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+            com.bravem.app.model.User dataUser = com.bravem.app.data.local.AppDatabase.getInstance(this).userDao().getByUid(userId);
+            if (dataUser != null) {
+                com.bravem.app.domain.model.User user = com.bravem.app.domain.model.UserMapper.toDomain(dataUser);
+                runOnUiThread(() -> {
                     Intent intent = new Intent(NotificationActivity.this, com.bravem.app.ui.community.ChatActivity.class);
                     intent.putExtra(com.bravem.app.ui.community.ChatActivity.EXTRA_USER, user);
                     startActivity(intent);
-                }
+                });
             } else {
-                Toast.makeText(NotificationActivity.this, "Failed to open chat", Toast.LENGTH_SHORT).show();
+                runOnUiThread(() -> Toast.makeText(NotificationActivity.this, "User not found locally", Toast.LENGTH_SHORT).show());
             }
         });
     }

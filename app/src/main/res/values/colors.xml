@@ -2,6 +2,7 @@
 <resources>
     <!-- Brand palette: academic ink & parchment theme -->
     <color name="ink_900">#1B2A4A</color>
+    <color name="ink_text">@color/ink_900</color>
     <color name="ink_700">#28395C</color>
     <color name="ink_500">#3D5278</color>
     <color name="ink_100">#E7EBF2</color>

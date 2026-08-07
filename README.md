@@ -3,7 +3,7 @@
 ## 1. Project Overview
 **BraveM** is a comprehensive educational platform designed to empower university students by providing easy access to past examination papers and fostering a collaborative academic community. The app follows an **offline-first approach**, ensuring that students can access critical resources even with limited connectivity.
 
-*   **Current Version**: 1.2.3
+*   **Current Version**: 1.2.4
 *   **Target Platform**: Android (Min SDK 24, Target SDK 35)
 *   **Key Paradigm**: Repository Pattern with Local-First Synchronization.
 
@@ -26,7 +26,7 @@
 *   **Multi-Step Registration**: Includes full name, university selection, and degree/intake assignment.
 *   **Role-Based Access**: Distinguishes between `student` and `admin` users.
 *   **Session Management**: Cached locally via `SessionManager` for instant UI rendering.
-*   **Version Tracking**: Every user profile tracks their `appVersion` (v1.2.3) to ensure compatibility.
+*   **Version Tracking**: Every user profile tracks their `appVersion` (v1.2.4) to ensure compatibility.
 
 ### 3.2 Academic Content (Past Papers)
 *   **Discovery**: Browse papers by university, degree, course, or intake.
@@ -79,8 +79,8 @@ The app uses strict security rules to ensure data privacy:
 
 ### 6.1 Versioning Policy
 The app maintains a versioning node in the database (`app_metadata`). 
-*   **Latest Version**: 1.2.3
-*   **Minimum Supported Version**: 1.2.0
+*   **Latest Version**: 1.2.4
+*   **Minimum Supported Version**: 1.2.1
 This allows the backend to notify users when an update is required to maintain functionality.
 
 ### 6.2 Error Handling

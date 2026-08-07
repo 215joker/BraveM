@@ -13,36 +13,22 @@ import com.bravem.app.model.User;
 import com.bravem.app.utils.SessionManager;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
 public class ChatRepository {
 
-    private final Context context;
     private final ChatMessageDao chatMessageDao;
     private final com.bravem.app.data.local.UserDao userDao;
     private final com.bravem.app.data.local.FriendshipDao friendshipDao;
     private final com.bravem.app.data.local.GroupDao groupDao;
     private final NotificationRepository notificationRepository;
     private final SessionManager sessionManager;
-    private final DatabaseReference messagesRef;
-    private final DatabaseReference groupsRef;
-    private final DatabaseReference groupMembersRef;
-    private final DatabaseReference groupMessagesRef;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    
-    private ValueEventListener currentChatListener;
-    private DatabaseReference currentChatRef;
 
     public ChatRepository(Context context) {
-        this.context = context.getApplicationContext();
         AppDatabase db = AppDatabase.getInstance(context);
         chatMessageDao = db.chatMessageDao();
         userDao = db.userDao();
@@ -50,53 +36,15 @@ public class ChatRepository {
         groupDao = db.groupDao();
         notificationRepository = new NotificationRepository(context);
         sessionManager = new SessionManager(context);
-        messagesRef = FirebaseDatabase.getInstance().getReference("messages");
-        groupsRef = FirebaseDatabase.getInstance().getReference("groups");
-        groupMembersRef = FirebaseDatabase.getInstance().getReference("groupMembers");
-        groupMessagesRef = FirebaseDatabase.getInstance().getReference("groupMessages");
     }
 
     public void startListening(String otherUserId, DataCallback<List<ChatMessage>> callback) {
-        stopListening();
-        String currentUserId = sessionManager.getUid();
-        String chatId = getChatId(currentUserId, otherUserId);
-        
-        currentChatRef = messagesRef.child(chatId);
-        currentChatListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                executor.execute(() -> {
-                    for (DataSnapshot msgSnapshot : snapshot.getChildren()) {
-                        ChatMessage msg = msgSnapshot.getValue(ChatMessage.class);
-                        if (msg != null) {
-                            chatMessageDao.insert(msg);
-                        }
-                    }
-                    List<ChatMessage> history = chatMessageDao.getChatHistory(currentUserId, otherUserId);
-                    chatMessageDao.markAsRead(otherUserId, currentUserId);
-                    mainHandler.post(() -> callback.onSuccess(history));
-                });
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                mainHandler.post(() -> callback.onError(error.toException()));
-            }
-        };
-        currentChatRef.addValueEventListener(currentChatListener);
+        // In local-only mode, we just fetch the history once or periodically
+        getChatHistory(otherUserId, callback);
     }
 
     public void stopListening() {
-        if (currentChatRef != null && currentChatListener != null) {
-            currentChatRef.removeEventListener(currentChatListener);
-            currentChatRef = null;
-            currentChatListener = null;
-        }
-    }
-
-    private String getChatId(String u1, String u2) {
-        if (u1 == null || u2 == null) return "unknown_chat";
-        return u1.compareTo(u2) < 0 ? u1 + "_" + u2 : u2 + "_" + u1;
+        // No-op in local mode
     }
 
     public void getChatHistory(String otherUserId, DataCallback<List<ChatMessage>> callback) {
@@ -108,6 +56,7 @@ public class ChatRepository {
         executor.execute(() -> {
             try {
                 List<ChatMessage> history = chatMessageDao.getChatHistory(currentUserId, otherUserId);
+                chatMessageDao.markAsRead(otherUserId, currentUserId);
                 mainHandler.post(() -> callback.onSuccess(history));
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));
@@ -124,42 +73,23 @@ public class ChatRepository {
         String senderName = sessionManager.getFullName();
         executor.execute(() -> {
             try {
-                String messageId = messagesRef.push().getKey();
-                if (messageId == null) {
-                    mainHandler.post(() -> callback.onError(new Exception("Failed to generate message ID")));
-                    return;
-                }
+                String messageId = UUID.randomUUID().toString();
                 ChatMessage chatMessage = new ChatMessage(senderId, receiverId, message, System.currentTimeMillis());
                 chatMessage.setId(messageId);
                 chatMessage.setAttachmentPath(attachmentPath);
                 chatMessage.setAttachmentType(attachmentType);
                 
-                String chatId = getChatId(senderId, receiverId);
-                messagesRef.child(chatId).child(messageId).setValue(chatMessage).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        executor.execute(() -> {
-                            chatMessageDao.insert(chatMessage);
-                            // Update friendship updatedAt for sorting
-                            com.bravem.app.model.Friendship friendship = friendshipDao.getFriendship(senderId, receiverId);
-                            if (friendship != null) {
-                                friendship.setUpdatedAt(System.currentTimeMillis());
-                                friendshipDao.update(friendship);
-                            }
+                chatMessageDao.insert(chatMessage);
+                
+                // Update friendship updatedAt for sorting
+                com.bravem.app.model.Friendship friendship = friendshipDao.getFriendship(senderId, receiverId);
+                if (friendship != null) {
+                    friendship.setUpdatedAt(System.currentTimeMillis());
+                    friendshipDao.update(friendship);
+                }
 
-                            // Notification for receiver
-                            notificationRepository.addNotification(
-                                    "New Message from " + senderName,
-                                    message != null && !message.isEmpty() ? message : "Sent an attachment",
-                                    "chat_message",
-                                    receiverId,
-                                    senderId
-                            );
-                            mainHandler.post(() -> callback.onSuccess(chatMessage));
-                        });
-                    } else {
-                        mainHandler.post(() -> callback.onError(task.getException()));
-                    }
-                });
+                // In local mode, we don't notify the "remote" receiver, but we could simulate it
+                mainHandler.post(() -> callback.onSuccess(chatMessage));
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));
             }
@@ -167,15 +97,7 @@ public class ChatRepository {
     }
 
     public void getTotalUnreadCount(DataCallback<Integer> callback) {
-        String currentUserId = sessionManager.getUid();
-        executor.execute(() -> {
-            try {
-                int count = chatMessageDao.getUnreadCount(currentUserId);
-                mainHandler.post(() -> callback.onSuccess(count));
-            } catch (Exception e) {
-                mainHandler.post(() -> callback.onError(e));
-            }
-        });
+        getUnreadChatCount(callback);
     }
 
     public void getUnreadChatCount(DataCallback<Integer> callback) {
@@ -191,120 +113,35 @@ public class ChatRepository {
     }
 
     public void startListeningToGroup(String groupId, DataCallback<List<ChatMessage>> callback) {
-        stopListening();
-        currentChatRef = groupMessagesRef.child(groupId);
-        currentChatListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                executor.execute(() -> {
-                    for (DataSnapshot msgSnapshot : snapshot.getChildren()) {
-                        ChatMessage msg = msgSnapshot.getValue(ChatMessage.class);
-                        if (msg != null) {
-                            chatMessageDao.insert(msg);
-                        }
-                    }
-                    List<ChatMessage> history = chatMessageDao.getGroupChatHistory(groupId);
-                    chatMessageDao.markGroupAsRead(groupId);
-                    mainHandler.post(() -> callback.onSuccess(history));
-                });
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                mainHandler.post(() -> callback.onError(error.toException()));
-            }
-        };
-        currentChatRef.addValueEventListener(currentChatListener);
+        executor.execute(() -> {
+            List<ChatMessage> history = chatMessageDao.getGroupChatHistory(groupId);
+            chatMessageDao.markGroupAsRead(groupId);
+            mainHandler.post(() -> callback.onSuccess(history));
+        });
     }
 
     public void createGroup(String name, String courseId, List<String> memberIds, DataCallback<Group> callback) {
         String currentUserId = sessionManager.getUid();
-        String groupId = groupsRef.push().getKey();
-        if (groupId == null) {
-            callback.onError(new Exception("Failed to generate group ID"));
-            return;
-        }
+        String groupId = UUID.randomUUID().toString();
 
         Group group = new Group(groupId, name, currentUserId, courseId, System.currentTimeMillis());
-        groupsRef.child(groupId).setValue(group).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                // Add members
-                List<String> allMembers = new java.util.ArrayList<>(memberIds);
-                if (!allMembers.contains(currentUserId)) allMembers.add(currentUserId);
-
-                for (String memberId : allMembers) {
-                    groupMembersRef.child(groupId).child(memberId).setValue(true);
-                    FirebaseDatabase.getInstance().getReference("users").child(memberId).child("groups").child(groupId).setValue(true);
-                }
-
-                executor.execute(() -> {
-                    groupDao.insert(group);
-                    mainHandler.post(() -> callback.onSuccess(group));
-                });
-            } else {
-                callback.onError(task.getException());
-            }
+        executor.execute(() -> {
+            groupDao.insert(group);
+            // In local mode, we'd also need to store members somewhere if needed
+            mainHandler.post(() -> callback.onSuccess(group));
         });
     }
 
     public void getGroups(DataCallback<List<Group>> callback) {
-        String currentUserId = sessionManager.getUid();
-        // This is a bit complex in Firebase because we need to find groups where the user is a member
-        // Option 1: Store group IDs under users/uid/groups
-        // Option 2: Query groupMembers (less efficient)
-        // For simplicity, let's assume we have users/uid/groups
-        FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("groups")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot snapshot) {
-                        List<String> groupIds = new java.util.ArrayList<>();
-                        for (DataSnapshot s : snapshot.getChildren()) {
-                            groupIds.add(s.getKey());
-                        }
-                        
-                        if (groupIds.isEmpty()) {
-                            callback.onSuccess(new java.util.ArrayList<>());
-                            return;
-                        }
-
-                        List<Group> groups = new java.util.ArrayList<>();
-                        java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger(groupIds.size());
-                        for (String gid : groupIds) {
-                            groupsRef.child(gid).addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(DataSnapshot snapshot) {
-                                    Group g = snapshot.getValue(Group.class);
-                                    if (g != null) groups.add(g);
-                                    if (count.decrementAndGet() == 0) {
-                                        executor.execute(() -> {
-                                            for (Group group : groups) groupDao.insert(group);
-                                            mainHandler.post(() -> callback.onSuccess(groups));
-                                        });
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(DatabaseError error) {}
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError error) {
-                        callback.onError(error.toException());
-                    }
-                });
+        executor.execute(() -> {
+            List<Group> groups = groupDao.getAll();
+            mainHandler.post(() -> callback.onSuccess(groups));
+        });
     }
 
     public void sendGroupMessage(String groupId, String message, String attachmentPath, String attachmentType, DataCallback<ChatMessage> callback) {
         String senderId = sessionManager.getUid();
-        String senderName = sessionManager.getFullName();
-        
-        String messageId = groupMessagesRef.child(groupId).push().getKey();
-        if (messageId == null) {
-            callback.onError(new Exception("Failed to generate message ID"));
-            return;
-        }
+        String messageId = UUID.randomUUID().toString();
 
         ChatMessage chatMessage = new ChatMessage(senderId, null, message, System.currentTimeMillis());
         chatMessage.setId(messageId);
@@ -313,22 +150,15 @@ public class ChatRepository {
         chatMessage.setAttachmentPath(attachmentPath);
         chatMessage.setAttachmentType(attachmentType);
 
-        groupMessagesRef.child(groupId).child(messageId).setValue(chatMessage).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                executor.execute(() -> {
-                    chatMessageDao.insert(chatMessage);
-                    // Update group last message
-                    groupsRef.child(groupId).child("lastMessage").setValue(message);
-                    groupsRef.child(groupId).child("lastMessageTimestamp").setValue(System.currentTimeMillis());
-                    
-                    mainHandler.post(() -> callback.onSuccess(chatMessage));
-                });
-                
-                // Notify group members (this would usually be done by a cloud function)
-                // For now, we'll skip complex group notifications
-            } else {
-                callback.onError(task.getException());
+        executor.execute(() -> {
+            chatMessageDao.insert(chatMessage);
+            Group group = groupDao.getById(groupId);
+            if (group != null) {
+                group.setLastMessage(message);
+                group.setLastMessageTimestamp(System.currentTimeMillis());
+                groupDao.update(group);
             }
+            mainHandler.post(() -> callback.onSuccess(chatMessage));
         });
     }
 

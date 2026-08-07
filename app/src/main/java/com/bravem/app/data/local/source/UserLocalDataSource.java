@@ -17,6 +17,10 @@ public class UserLocalDataSource {
         return userDao.getByUid(uid);
     }
 
+    public User getUserByEmail(String email) {
+        return userDao.getByEmail(email);
+    }
+
     public void saveUser(User user) {
         userDao.insert(user);
     }

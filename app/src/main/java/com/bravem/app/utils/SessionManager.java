@@ -56,7 +56,7 @@ public class SessionManager {
                 .putString(KEY_DEGREE_ID, degreeId)
                 .putString(KEY_DEGREE_NAME, degreeName)
                 .putString(KEY_INTAKE, intake)
-                .apply();
+                .commit();
     }
 
     public void updateDegree(String degreeId, String degreeName, String intake) {
@@ -64,7 +64,7 @@ public class SessionManager {
                 .putString(KEY_DEGREE_ID, degreeId)
                 .putString(KEY_DEGREE_NAME, degreeName)
                 .putString(KEY_INTAKE, intake)
-                .apply();
+                .commit();
     }
 
     public String getUid() { return prefs.getString(KEY_UID, null); }

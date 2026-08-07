@@ -42,12 +42,20 @@ public class Course implements Serializable {
         this.id = id;
     }
 
+    public void setId(@NonNull Object id) {
+        this.id = String.valueOf(id);
+    }
+
     public String getDegreeId() {
         return degreeId;
     }
 
     public void setDegreeId(String degreeId) {
         this.degreeId = degreeId;
+    }
+
+    public void setDegreeId(Object degreeId) {
+        this.degreeId = degreeId != null ? String.valueOf(degreeId) : null;
     }
 
     public String getName() {

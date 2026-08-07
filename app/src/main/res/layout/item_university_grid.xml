@@ -17,7 +17,7 @@
         android:gravity="center"
         android:minHeight="100dp"
         android:padding="16dp"
-        android:textColor="@color/ink_900"
+        android:textColor="@color/ink_text"
         android:textSize="15sp"
         android:textStyle="bold"
         android:fontFamily="serif" />

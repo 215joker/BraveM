@@ -37,9 +37,19 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        UiUtils.applyEdgeToEdge(this);
         super.onCreate(savedInstanceState);
+        UiUtils.applyEdgeToEdge(this);
         setContentView(R.layout.activity_admin_dashboard);
+
+        // Initialize views first to avoid NPE
+        initViews();
+
+        sessionManager = new SessionManager(this);
+        if (!"admin".equalsIgnoreCase(sessionManager.getRole())) {
+            Toast.makeText(this, "Unauthorised: Admin access required", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
 
         UiUtils.handleTopInset(findViewById(R.id.app_bar));
         UiUtils.handleBottomInset(findViewById(android.R.id.content));
@@ -48,9 +58,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         degreeRepository = new DegreeRepositoryImpl(this);
         paperRepository = new PaperRepositoryImpl(this);
         chatRepository = new com.bravem.app.data.ChatRepository(this);
-        sessionManager = new SessionManager(this);
 
-        initViews();
         setupClickListeners();
         refreshStats();
     }
@@ -102,76 +110,93 @@ public class AdminDashboardActivity extends AppCompatActivity {
     }
 
     private void refreshStats() {
-        userRepository.fetchAllUsers(new DataCallback<>() {
-            @Override
-            public void onSuccess(List<User> result) {
-                int studentCount = 0;
-                for (User user : result) {
-                    if ("student".equalsIgnoreCase(user.getRole())) {
-                        studentCount++;
+        if (tvStatUsers != null) {
+            userRepository.fetchAllUsers(new DataCallback<>() {
+                @Override
+                public void onSuccess(List<User> result) {
+                    if (result == null) return;
+                    int studentCount = 0;
+                    for (User user : result) {
+                        if (user != null && "student".equalsIgnoreCase(user.getRole())) {
+                            studentCount++;
+                        }
+                    }
+                    tvStatUsers.setText(String.valueOf(studentCount));
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    tvStatUsers.setText("0");
+                }
+            });
+        }
+
+        if (tvStatDegrees != null) {
+            degreeRepository.fetchAllDegrees(new DataCallback<>() {
+                @Override
+                public void onSuccess(List<com.bravem.app.domain.model.Degree> result) {
+                    if (result != null) {
+                        tvStatDegrees.setText(String.valueOf(result.size()));
                     }
                 }
-                tvStatUsers.setText(String.valueOf(studentCount));
-            }
 
-            @Override
-            public void onError(Exception e) {
-                tvStatUsers.setText("0");
-            }
-        });
+                @Override
+                public void onError(Exception e) {
+                    tvStatDegrees.setText("0");
+                }
+            });
+        }
 
-        degreeRepository.fetchAllDegrees(new DataCallback<>() {
-            @Override
-            public void onSuccess(List<com.bravem.app.domain.model.Degree> result) {
-                tvStatDegrees.setText(String.valueOf(result.size()));
-            }
+        if (tvStatUniversities != null) {
+            degreeRepository.fetchAllUniversities(new DataCallback<>() {
+                @Override
+                public void onSuccess(List<String> result) {
+                    if (result != null) {
+                        tvStatUniversities.setText(String.valueOf(result.size()));
+                    }
+                }
 
-            @Override
-            public void onError(Exception e) {
-                tvStatDegrees.setText("0");
-            }
-        });
+                @Override
+                public void onError(Exception e) {
+                    tvStatUniversities.setText("0");
+                }
+            });
+        }
 
-        degreeRepository.fetchAllUniversities(new DataCallback<>() {
-            @Override
-            public void onSuccess(List<String> result) {
-                tvStatUniversities.setText(String.valueOf(result.size()));
-            }
+        if (tvStatPapers != null) {
+            paperRepository.fetchAllPapersForAdmin(new DataCallback<>() {
+                @Override
+                public void onSuccess(List<PastPaper> result) {
+                    if (result != null) {
+                        tvStatPapers.setText(String.valueOf(result.size()));
+                    }
+                }
 
-            @Override
-            public void onError(Exception e) {
-                tvStatUniversities.setText("0");
-            }
-        });
+                @Override
+                public void onError(Exception e) {
+                    tvStatPapers.setText("0");
+                }
+            });
+        }
 
-        paperRepository.fetchAllPapersForAdmin(new DataCallback<>() {
-            @Override
-            public void onSuccess(List<PastPaper> result) {
-                tvStatPapers.setText(String.valueOf(result.size()));
-            }
+        if (tvUnreadChats != null) {
+            chatRepository.getTotalUnreadCount(new DataCallback<>() {
+                @Override
+                public void onSuccess(Integer count) {
+                    if (count != null && count > 0) {
+                        tvUnreadChats.setVisibility(View.VISIBLE);
+                        tvUnreadChats.setText(String.valueOf(count));
+                    } else {
+                        tvUnreadChats.setVisibility(View.GONE);
+                    }
+                }
 
-            @Override
-            public void onError(Exception e) {
-                tvStatPapers.setText("0");
-            }
-        });
-
-        chatRepository.getTotalUnreadCount(new DataCallback<>() {
-            @Override
-            public void onSuccess(Integer count) {
-                if (count > 0) {
-                    tvUnreadChats.setVisibility(View.VISIBLE);
-                    tvUnreadChats.setText(String.valueOf(count));
-                } else {
+                @Override
+                public void onError(Exception e) {
                     tvUnreadChats.setVisibility(View.GONE);
                 }
-            }
-
-            @Override
-            public void onError(Exception e) {
-                tvUnreadChats.setVisibility(View.GONE);
-            }
-        });
+            });
+        }
     }
 
     @Override

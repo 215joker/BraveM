@@ -16,13 +16,19 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     private List<Notification> notifications = new ArrayList<>();
     private final OnNotificationClickListener listener;
+    private final OnNotificationClearListener clearListener;
 
     public interface OnNotificationClickListener {
         void onNotificationClick(Notification notification);
     }
 
-    public NotificationAdapter(OnNotificationClickListener listener) {
+    public interface OnNotificationClearListener {
+        void onNotificationClear(Notification notification);
+    }
+
+    public NotificationAdapter(OnNotificationClickListener listener, OnNotificationClearListener clearListener) {
         this.listener = listener;
+        this.clearListener = clearListener;
     }
 
     public void submitList(List<Notification> newList) {
@@ -45,6 +51,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.time.setText(DateUtils.getRelativeTimeSpanString(notification.getTimestamp()));
         holder.unreadIndicator.setVisibility(notification.isRead() ? View.GONE : View.VISIBLE);
         holder.itemView.setOnClickListener(v -> listener.onNotificationClick(notification));
+        holder.clearButton.setOnClickListener(v -> clearListener.onNotificationClear(notification));
     }
 
     public Notification getNotificationAt(int position) {
@@ -64,6 +71,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView title, message, time;
         View unreadIndicator;
+        View clearButton;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -71,6 +79,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             message = itemView.findViewById(R.id.text_notification_message);
             time = itemView.findViewById(R.id.text_notification_time);
             unreadIndicator = itemView.findViewById(R.id.unread_indicator);
+            clearButton = itemView.findViewById(R.id.btn_clear_notification);
         }
     }
 }

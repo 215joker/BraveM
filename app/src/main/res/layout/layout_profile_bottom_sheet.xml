@@ -43,7 +43,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="serif"
                 android:text="User Name"
-                android:textColor="@color/ink_900"
+                android:textColor="@color/ink_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -72,7 +72,7 @@
         android:text="@string/profile"
         app:icon="@drawable/ic_person"
         app:iconPadding="16dp"
-        app:iconTint="@color/ink_900" />
+        app:iconTint="@color/ink_text" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_notifications"
@@ -83,7 +83,7 @@
         android:text="@string/notifications"
         app:icon="@drawable/ic_notifications"
         app:iconPadding="16dp"
-        app:iconTint="@color/ink_900" />
+        app:iconTint="@color/ink_text" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_settings"
@@ -94,7 +94,7 @@
         android:text="@string/app_settings"
         app:icon="@drawable/ic_settings"
         app:iconPadding="16dp"
-        app:iconTint="@color/ink_900" />
+        app:iconTint="@color/ink_text" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_admin"
@@ -106,7 +106,7 @@
         android:visibility="gone"
         app:icon="@drawable/ic_bravem_logo"
         app:iconPadding="16dp"
-        app:iconTint="@color/ink_900" />
+        app:iconTint="@color/ink_text" />
 
     <com.google.android.material.divider.MaterialDivider
         android:layout_width="match_parent"

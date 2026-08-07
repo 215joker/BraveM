@@ -88,7 +88,7 @@
                     android:layout_marginTop="10dp"
                     android:fontFamily="sans-serif-medium"
                     android:text="@string/select_file"
-                    android:textColor="@color/ink_900"
+                    android:textColor="@color/ink_text"
                     android:textSize="14sp" />
 
                 <TextView
@@ -108,7 +108,7 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:text="Answer Sheet / Memorandum (Optional)"
-                android:textColor="@color/ink_700"
+                android:textColor="@color/ink_text"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -280,7 +280,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:text="@string/queued_papers_count"
-                android:textColor="@color/ink_700"
+                android:textColor="@color/ink_text"
                 android:textStyle="bold"
                 android:visibility="gone" />
 

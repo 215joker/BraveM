@@ -73,9 +73,8 @@ public class DashboardActivity extends AppCompatActivity {
         UiUtils.handleTopInset(binding.appBar);
         UiUtils.handleFabBottomInset(binding.fabUpload, 24);
         
-        // Chat FAB container (it's inside a FrameLayout in XML)
-        View chatFabContainer = (View) binding.fabChat.getParent();
-        UiUtils.handleFabBottomInset(chatFabContainer, 100);
+        // Secondary FABs container
+        UiUtils.handleFabBottomInset(binding.fabContainerSecondary, 100);
     }
 
     private void setupToolbar() {
@@ -122,6 +121,12 @@ public class DashboardActivity extends AppCompatActivity {
                 startActivity(new Intent(this, com.bravem.app.ui.community.CommunityActivity.class)));
 
         binding.btnProfile.setOnClickListener(v -> showProfileOptions());
+
+        binding.fabMarketplace.setOnClickListener(v ->
+                startActivity(new Intent(this, com.bravem.app.ui.marketplace.MarketplaceActivity.class)));
+
+        binding.fabLibrary.setOnClickListener(v ->
+                startActivity(new Intent(this, com.bravem.app.ui.library.LibraryLoginActivity.class)));
     }
 
     private void observeViewModel() {

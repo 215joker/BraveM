@@ -68,7 +68,7 @@
         android:layout_marginTop="12dp"
         app:hintEnabled="false"
         app:startIconDrawable="@drawable/ic_search"
-        app:startIconTint="@color/ink_900">
+        app:startIconTint="@color/ink_text">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_search"
@@ -99,7 +99,7 @@
             android:layout_height="32dp"
             android:layout_gravity="center"
             android:visibility="gone"
-            app:indicatorColor="@color/ink_900" />
+            app:indicatorColor="@color/ink_text" />
 
         <TextView
             android:id="@+id/empty_state"

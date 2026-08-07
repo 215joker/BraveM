@@ -4,7 +4,7 @@
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
+    android:background="@color/parchment_100">
 
     <!-- Remote Video Grid (Dynamic) -->
     <GridLayout
@@ -20,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        android:background="@color/black" />
+        android:background="@color/parchment_100" />
 
     <!-- Remote Placeholder (Initial) -->
     <LinearLayout
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="Connecting..."
-            android:textColor="@color/white"
+            android:textColor="@color/ink_text"
             android:textSize="20sp"
             android:letterSpacing="0.05"
             android:fontFamily="sans-serif-medium" />
@@ -75,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="LIVE • STUDY ROOM"
-            android:textColor="@color/white"
+            android:textColor="@color/ink_text"
             android:textSize="12sp"
             android:textStyle="bold"
             android:letterSpacing="0.1" />
@@ -97,8 +97,8 @@
             app:icon="@drawable/ic_add_person"
             app:iconPadding="0dp"
             app:iconSize="20dp"
-            app:iconTint="@color/white"
-            app:backgroundTint="#8028395C"
+            app:iconTint="@color/ink_text"
+            app:backgroundTint="@color/ink_100"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.BraveM.Circle" />
     </LinearLayout>
 
@@ -113,14 +113,14 @@
         android:layout_marginEnd="20dp"
         app:cardCornerRadius="20dp"
         app:cardElevation="12dp"
-        app:strokeColor="@color/white"
+        app:strokeColor="@color/divider"
         app:strokeWidth="1.5dp">
 
         <FrameLayout
             android:id="@+id/local_video_view_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/ink_900" />
+            android:background="@color/ink_100" />
 
     </com.google.android.material.card.MaterialCardView>
 
@@ -140,7 +140,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card_default"
-            android:backgroundTint="#CC28395C"
+            android:backgroundTint="@color/ink_100"
             android:elevation="8dp"
             android:gravity="center"
             android:orientation="horizontal"
@@ -159,7 +159,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="24dp"
-                app:iconTint="@color/white"
+                app:iconTint="@color/ink_text"
                 app:backgroundTint="@color/ink_500"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.BraveM.Circle" />
 
@@ -177,7 +177,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="24dp"
-                app:iconTint="@color/white"
+                app:iconTint="@color/ink_text"
                 app:backgroundTint="@color/ink_500"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.BraveM.Circle" />
 
@@ -195,7 +195,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="24dp"
-                app:iconTint="@color/white"
+                app:iconTint="@color/ink_text"
                 app:backgroundTint="@color/ink_500"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.BraveM.Circle" />
 
@@ -213,7 +213,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="24dp"
-                app:iconTint="@color/white"
+                app:iconTint="@color/ink_text"
                 app:backgroundTint="@color/ink_500"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.BraveM.Circle" />
 

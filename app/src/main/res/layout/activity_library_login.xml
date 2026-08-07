@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/parchment_50">
+    ​
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp">
+        ​
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginBottom="24dp"
+            android:src="@drawable/ic_library"
+            app:tint="@color/ink_text" />
+        ​
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="serif"
+            android:text="@string/library_login_title"
+            android:textColor="@color/ink_text"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+        ​
+        <TextView
+            android:id="@+id/text_library_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="40dp"
+            android:gravity="center"
+            android:text="@string/library_login_subtitle"
+            android:textColor="@color/ink_text"
+            android:textSize="14sp" />
+        ​
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.BraveM.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:hint="@string/student_number"
+            app:startIconDrawable="@drawable/ic_person"
+            app:startIconTint="@color/ink_text"
+            app:hintTextColor="@color/ink_text"
+            android:textColorHint="@color/ink_text">
+            ​
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_student_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ink_text"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+        ​
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.BraveM.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:hint="@string/library_password"
+            app:endIconMode="password_toggle"
+            app:endIconTint="@color/ink_text"
+            app:startIconDrawable="@drawable/ic_logout"
+            app:startIconTint="@color/ink_text"
+            app:hintTextColor="@color/ink_text"
+            android:textColorHint="@color/ink_text">
+            ​
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ink_text"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+        ​
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_login"
+            style="@style/Widget.BraveM.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/login_to_library" />
+        ​
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_back"
+            style="@style/Widget.BraveM.Button.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/back_to_dashboard" />
+        ​
+    </LinearLayout>
+    ​
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

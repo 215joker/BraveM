@@ -15,7 +15,7 @@
         android:layout_marginBottom="20dp"
         android:fontFamily="serif"
         android:text="Invite to Study Room"
-        android:textColor="@color/ink_900"
+        android:textColor="@color/ink_text"
         android:textSize="20sp"
         android:textStyle="bold" />
 
@@ -26,12 +26,10 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_done"
-        style="@style/Widget.MaterialComponents.Button"
+        style="@style/Widget.BraveM.Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Done"
-        app:backgroundTint="@color/ink_900"
-        app:cornerRadius="24dp" />
+        android:text="Done" />
 
 </LinearLayout>

@@ -34,22 +34,32 @@ public class ChatMessage implements Serializable {
 
     @NonNull
     public String getId() { return id; }
-    public void setId(@NonNull String id) { this.id = id; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getSenderId() { return senderId; }
-    public void setSenderId(String senderId) { this.senderId = senderId; }
+    public void setSenderId(String senderId) {
+        this.senderId = senderId;
+    }
 
     public String getReceiverId() { return receiverId; }
-    public void setReceiverId(String receiverId) { this.receiverId = receiverId; }
+    public void setReceiverId(String receiverId) {
+        this.receiverId = receiverId;
+    }
 
     public String getGroupId() { return groupId; }
-    public void setGroupId(String groupId) { this.groupId = groupId; }
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
 
     public boolean isGroup() { return isGroup; }
     public void setGroup(boolean group) { isGroup = group; }
 
     public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    public void setMessage(String message) {
+        this.message = message;
+    }
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }

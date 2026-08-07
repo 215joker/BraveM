@@ -133,6 +133,7 @@
     <string name="new_message">New Message from %1$s</string>
     <string name="pinned_papers">Pinned Papers</string>
     <string name="notifications">Notifications</string>
+    <string name="clear_all_notifications">Clear All</string>
     <string name="app_settings">App Settings</string>
     <string name="app_theme">App Theme</string>
     <string name="about_app">About BraveM</string>
@@ -165,4 +166,53 @@
     <string name="ok">OK</string>
     <string name="confirm_delete_title">Delete this item?</string>
     <string name="confirm_delete_message">This action cannot be undone.</string>
+
+    <!-- Marketplace -->
+    <string name="university_services">University Services</string>
+    <string name="marketplace">Student Marketplace</string>
+    <string name="marketplace_subtitle">Student materials</string>
+    <string name="sell_item">Sell Item</string>
+    <string name="buy_item">Buy Item</string>
+    <string name="lab_coats">Lab Coats</string>
+    <string name="books">Books</string>
+    <string name="nurse_materials">Nurse Materials</string>
+    <string name="all_universities_marketplace">Global Marketplace</string>
+    <string name="search_marketplace_hint">Search materials (lab coats, books...)</string>
+    <string name="categories">Categories</string>
+    <string name="all">All</string>
+    <string name="recent_listings">Recent Listings</string>
+    <string name="sell_item_title">Sell Your Material</string>
+    <string name="item_name">Item Name</string>
+    <string name="item_category">Category</string>
+    <string name="item_price">Price (ZMW)</string>
+    <string name="item_description">Description</string>
+    <string name="post_listing">Post Listing</string>
+    <string name="listing_success">Listing posted successfully!</string>
+    <string name="select_image">Select Image</string>
+    <string name="item_details">Item Details</string>
+    <string name="seller_info">Seller Information</string>
+    <string name="description">Description</string>
+    <string name="change_price">Change Price</string>
+    <string name="send_proposal">Send Proposal</string>
+    <string name="update">Update</string>
+    <string name="enter_offer_hint">Enter your offer price</string>
+    <string name="price_updated">Price updated successfully</string>
+    <string name="proposal_sent_msg">Proposal of ZMW %1$s sent to %2$s</string>
+
+    <!-- Library -->
+    <string name="library">Library</string>
+    <string name="library_subtitle">Books &amp; Study Space</string>
+    <string name="book_study_session">Study Session</string>
+    <string name="available_books">Library Books</string>
+    <string name="my_bookings">My Bookings</string>
+    <string name="search_books_hint">Search books by title or author...</string>
+    <string name="book_a_seat">Book a Study Session</string>
+    <string name="library_hours">Library Hours: 8:00 AM - 10:00 PM</string>
+    <string name="select_date_time">Select Date &amp; Time</string>
+    <string name="library_login_title">Library Access</string>
+    <string name="library_login_subtitle">Enter your details to access %1$s Library</string>
+    <string name="student_number">Student Number</string>
+    <string name="library_password">Password</string>
+    <string name="login_to_library">Login to Library</string>
+    <string name="back_to_dashboard">Back to Dashboard</string>
 </resources>

@@ -20,7 +20,7 @@
         android:gravity="center"
         android:paddingVertical="16dp"
         android:paddingHorizontal="8dp"
-        android:textColor="@color/ink_900"
+        android:textColor="@color/ink_text"
         android:textSize="15sp"
         android:textStyle="bold" />
 
