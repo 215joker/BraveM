@@ -45,4 +45,8 @@ public class User implements java.io.Serializable {
     public boolean isAdmin() {
         return "admin".equalsIgnoreCase(role);
     }
+
+    public boolean isSupervisor() {
+        return "supervisor".equalsIgnoreCase(role) || "developer".equalsIgnoreCase(role);
+    }
 }

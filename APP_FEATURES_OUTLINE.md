@@ -87,7 +87,26 @@ A specialized interface for "admin" role users to maintain the platform.
 
 ---
 
-## 6. Architecture & Data Flow Connectivity
+## 6. System Supervisor / Developer Dashboard
+A high-level infrastructure dashboard for the "Developer" role, focused on system stability and maintenance without access to sensitive user data.
+
+*   **6.1 Supervisor Overview (`SupervisorDashboardActivity`)**
+    *   **System Health**: Real-time status indicators for Firebase services, API availability, and database connectivity.
+    *   **Performance Metrics**: Aggregate data on app latency, crash-free session percentages, and active background worker status.
+*   **6.2 Infrastructure Management**
+    *   **`FeatureToggleActivity` (Remote Config)**: Globally enable or disable app features (e.g., maintenance mode, new upload engine) without requiring a store update.
+    *   **`VersionControlActivity`**: Manage mandatory update flags and deprecated API versions.
+*   **6.3 Resource & Traffic Monitoring**
+    *   **Storage Metrics**: Track Cloud Storage quotas and CDN bandwidth usage.
+    *   **Database Load**: Monitor read/write operations and identify high-latency queries.
+*   **6.4 System Maintenance Tools**
+    *   **`GlobalCacheManagerActivity`**: Trigger server-side cache invalidation or CDN purges.
+    *   **`BackupLogsActivity`**: View system-level logs, server errors, and automated deployment status (anonymized).
+    *   **`WorkerMonitorActivity`**: Inspect the health and retry-history of `SyncWorker` and other scheduled tasks.
+
+---
+
+## 7. Architecture & Data Flow Connectivity
 
 *   **Repository Layer**: Every UI component connects to a specialized repository (e.g., `AuthRepository`, `PaperRepository`) which abstracts Firebase and Room logic.
 *   **Synchronization**: The `SyncWorker` runs in the background to keep the local Room database updated with the Firebase Realtime Database.

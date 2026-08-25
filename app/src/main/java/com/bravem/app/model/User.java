@@ -14,6 +14,7 @@ public class User implements Serializable {
 
     public static final String ROLE_STUDENT = "student";
     public static final String ROLE_ADMIN = "admin";
+    public static final String ROLE_SUPERVISOR = "supervisor";
 
     @PrimaryKey
     @NonNull

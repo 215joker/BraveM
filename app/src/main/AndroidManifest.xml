@@ -76,6 +76,8 @@
         <activity android:name=".ui.admin.DeletedUsersActivity" android:exported="false" />
         <activity android:name=".ui.admin.AdminChatListActivity" android:exported="false" />
 
+        <activity android:name=".ui.supervisor.SupervisorDashboardActivity" android:exported="false" />
+
         <activity android:name=".ui.profile.ProfileActivity" android:exported="false" />
         <activity android:name=".ui.notifications.NotificationActivity" android:exported="false" />
         <activity android:name=".ui.community.CommunityActivity" android:exported="false" />

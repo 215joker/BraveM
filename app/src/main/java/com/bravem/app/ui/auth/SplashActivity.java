@@ -18,6 +18,7 @@ import com.bravem.app.domain.model.User;
 import com.bravem.app.domain.repository.UserRepository;
 import com.bravem.app.ui.admin.AdminDashboardActivity;
 import com.bravem.app.ui.dashboard.DashboardActivity;
+import com.bravem.app.ui.supervisor.SupervisorDashboardActivity;
 import com.bravem.app.utils.SessionManager;
 
 /**
@@ -91,7 +92,9 @@ public class SplashActivity extends AppCompatActivity {
     private void routeBasedOnSession(SessionManager session) {
         // check session
         String role = session.getRole();
-        if ("admin".equalsIgnoreCase(role)) {
+        if ("supervisor".equalsIgnoreCase(role) || "developer".equalsIgnoreCase(role)) {
+            startActivity(new Intent(this, SupervisorDashboardActivity.class));
+        } else if ("admin".equalsIgnoreCase(role)) {
             startActivity(new Intent(this, AdminDashboardActivity.class));
         } else if (session.getDegreeId() == null || session.getDegreeId().isEmpty()) {
             startActivity(new Intent(this, SelectDegreeActivity.class));

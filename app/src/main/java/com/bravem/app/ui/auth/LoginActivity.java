@@ -15,6 +15,7 @@ import com.bravem.app.databinding.ActivityLoginBinding;
 import com.bravem.app.domain.model.User;
 import com.bravem.app.ui.admin.AdminDashboardActivity;
 import com.bravem.app.ui.dashboard.DashboardActivity;
+import com.bravem.app.ui.supervisor.SupervisorDashboardActivity;
 import com.bravem.app.utils.Resource;
 import com.bravem.app.utils.SessionManager;
 import com.bravem.app.utils.UiUtils;
@@ -142,7 +143,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private void routeUser(User user) {
         Intent intent;
-        if (user.isAdmin()) {
+        if (user.isSupervisor()) {
+            intent = new Intent(LoginActivity.this, SupervisorDashboardActivity.class);
+        } else if (user.isAdmin()) {
             intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
         } else if (user.getDegreeId() == null || user.getDegreeId().isEmpty()) {
             intent = new Intent(LoginActivity.this, SelectDegreeActivity.class);
@@ -150,12 +153,17 @@ public class LoginActivity extends AppCompatActivity {
             intent = new Intent(LoginActivity.this, DashboardActivity.class);
         }
         
-        // Final sanity check for admin intent
-        if (intent.getComponent() != null && intent.getComponent().getClassName().contains("AdminDashboardActivity")) {
-             if (!user.isAdmin()) {
-                 Toast.makeText(this, "Unauthorised: Not an admin account", Toast.LENGTH_LONG).show();
-                 return;
-             }
+        // Final sanity check for administrative intents
+        if (intent.getComponent() != null) {
+            String className = intent.getComponent().getClassName();
+            if (className.contains("SupervisorDashboardActivity") && !user.isSupervisor()) {
+                Toast.makeText(this, "Unauthorised: Supervisor access required", Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (className.contains("AdminDashboardActivity") && !user.isAdmin()) {
+                Toast.makeText(this, "Unauthorised: Not an admin account", Toast.LENGTH_LONG).show();
+                return;
+            }
         }
 
         startActivity(intent);

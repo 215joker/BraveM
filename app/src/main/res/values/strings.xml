@@ -215,4 +215,26 @@
     <string name="library_password">Password</string>
     <string name="login_to_library">Login to Library</string>
     <string name="back_to_dashboard">Back to Dashboard</string>
+
+    <!-- Developer/Supervisor Dashboard -->
+    <string name="supervisor_dashboard">Supervisor Dashboard</string>
+    <string name="supervisor_welcome">System Health Overview</string>
+    <string name="supervisor_subtitle">Infrastructure &amp; Maintenance</string>
+    <string name="feature_toggles">Feature Toggles</string>
+    <string name="version_control">Version Control</string>
+    <string name="worker_monitor">Sync Monitor</string>
+    <string name="storage_metrics">Storage Metrics</string>
+    <string name="database_load">Database Load</string>
+    <string name="system_health">System Health</string>
+    <string name="cache_manager">Global Cache Manager</string>
+    <string name="backup_logs">System Logs</string>
+    <string name="status_online">Online</string>
+    <string name="status_maintenance">Maintenance</string>
+    <string name="status_degraded">Degraded</string>
+    <string name="firebase_services">Firebase Services</string>
+    <string name="api_latency">API Latency</string>
+    <string name="active_workers">Active Workers</string>
+    <string name="infrastructure_section">Infrastructure</string>
+    <string name="maintenance_section">Maintenance</string>
+    <string name="traffic_monitoring">Traffic Monitoring</string>
 </resources>
